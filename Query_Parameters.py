@@ -35,7 +35,7 @@ def insert_shipment_column(data_range, input_date, customer):
     data_range.loc[0, column_number + 1] = customer
 
 # 遍歷扣帳表並更新庫存數據
-debit_sheet = pd.read_excel(wb, sheet_name="扣帳表")
+
 def update_stock_data(debit_sheet, data_range):
     for index, row in debit_sheet.iterrows():
         inputPartNo = row[2]
@@ -61,6 +61,7 @@ def stock_update(file_path):
     data_range = read_data_range(wb)
     input_date, customer = collect_shipment_info()
     insert_shipment_column(data_range, input_date, customer)
+    debit_sheet = pd.read_excel(wb, sheet_name="扣帳表")
     update_stock_data(debit_sheet, data_range)
     display_total_shipment(data_range, input_date)
     save_workbook(file_path, data_range)
