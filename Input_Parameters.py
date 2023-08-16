@@ -1,24 +1,37 @@
 import pandas as pd
-import openpyxl  # 如果需要更精細的Excel操作
-
-worksheet_path = 'path_to_workbook.xlsx'
-stock_workbook_path = 'path_to_stock_workbook.xlsx'
+from openpyxl import load_workbook
 
 
-def clear_worksheet(sheet_name):
-    # 讀取工作表
-    workbook = pd.read_excel(worksheet_path, sheet_name=sheet_name)
+def clear_worksheet(workbook_path, sheet_name):
+    # Read the worksheet into a DataFrame
+    df = pd.read_excel(workbook_path, sheet_name=sheet_name, engine='openpyxl')
 
-    # 清除工作表
-    workbook.iloc[2:] = ''
-    return workbook
+    # Clear the values from row 2 onward
+    df.iloc[1:] = None
 
-def read_stock_data(stock_workbook_path, stock_sheet_name):
-    return pd.read_excel(stock_workbook_path, sheet_name=stock_sheet_name)
+    # Save the changes
+    df.to_excel(workbook_path, sheet_name=sheet_name, index=False, engine='openpyxl')
 
 
-def main_query(sheet_name):
-    query_input_data = pd.read_excel(worksheet_path, sheet_name=sheet_name)
+def read_stock_data(workbook_path, sheet_name):
+    """
+
+    :type workbook_path: object
+    """
+    # Define the columns you want to read (from B to J)
+    cols = "B:J"
+
+    # Skip the first 2 rows to start reading from row 3
+    skip_rows = 2
+
+    # Read the specific range into a DataFrame
+    df = pd.read_excel(workbook_path, sheet_name=sheet_name, usecols=cols, skiprows=skip_rows, engine='openpyxl')
+
+    return df
+
+
+def main_query(workbook_path, sheet_name):
+    query_input_data = pd.read_excel(workbook_path, sheet_name=sheet_name)
 
     for index, row in query_input_data.iterrows():
         # 區域變數
@@ -28,6 +41,8 @@ def main_query(sheet_name):
 
 
 if __name__ == "__main__":
-    clear_worksheet('查詢結果')
-    stock_data = read_stock_data(stock_workbook_path, '20230105')
-    main_query('查詢輸入')
+    parameters_worksheet_path = r'C:\Users\windows user\Desktop\parameters_dataframe.xlsx'
+    stock_workbook_path: str = r'\\192.168.1.220\神錡\sample標籤\出貨標籤\客戶出貨規範\崧騰\出貨明細\2023倉庫用\(NEW)2023.xlsx'
+    clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
+    stock_data = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
+    main_query(workbook_path=parameters_worksheet_path, sheet_name='Query_Parameters')
