@@ -3,6 +3,45 @@ import pandas as pd
 # 全域變數
 sheet_name = "20230105"
 
+def get_sampling_count(shipment_count):
+    shipment_bounds = [2, 9, 16, 26, 51, 91, 151, 281, 501, 1201, 3201, 10001, 35001, 150001, 500001]
+    sampling_counts = [2, 3, 5, 8, 13, 20, 32, 50, 80, 125, 200, 315, 500, 800, 1250]
+
+    # 二分搜索找到合適的區間
+    left, right = 0, len(shipment_bounds) - 1
+    while left <= right:
+        mid = left + (right - left) // 2
+        if shipment_bounds[mid] <= shipment_count < shipment_bounds[mid + 1]:
+            return sampling_counts[mid]
+        elif shipment_count < shipment_bounds[mid]:
+            right = mid - 1
+        else:
+            left = mid + 1
+
+    return None  # 如果數量不在任何區間內，返回 None
+
+def merge_with_reference(your_dataframe):
+    # 讀取參照表
+    parameters_db = pd.read_csv('parameters_database.csv')
+
+    # 將 part_number 設置為參照表的索引
+    parameters_db.set_index('part_number', inplace=True)
+
+    # 確保 your_dataframe 有 part_number 列
+    if 'part_number' not in your_dataframe.columns:
+        raise ValueError("Input DataFrame must contain a 'part_number' column.")
+
+    # 將 part_number 設置為您的 DataFrame 的索引
+    your_dataframe.set_index('part_number', inplace=True)
+
+    # 使用 join 方法進行合併
+    merged_dataframe = your_dataframe.join(parameters_db, how='left')
+
+    # 將 part_number 轉回普通列
+    merged_dataframe.reset_index(inplace=True)
+
+    return merged_dataframe
+
 # 打開工作簿並檢查是否為唯讀
 def open_workbook(file_path):
     try:
