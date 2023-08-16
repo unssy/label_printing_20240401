@@ -57,47 +57,50 @@ def format_date_code(date_code):
     else:
         return str(date_code)
 
+def process_stock_by_max_and_earliest(part_stock, target_quantity):
+    part_stock_sorted = part_stock.sort_values(by=['date_code'], ascending=True)
+    result_list = []
+    accumulated_quantity = 0
+
+    for date_code, group in part_stock_sorted.groupby('date_code'):
+        exact_match = group[group['quantity'] == target_quantity]
+        if not exact_match.empty:
+            result_list.append(exact_match.iloc[0].to_dict())
+            accumulated_quantity += target_quantity
+            break
+
+        # 找到與 target_quantity 最接近的 row
+        closest_lot = group.iloc[(group['quantity'] - target_quantity).abs().argsort()[:1]]
+        take_quantity = min(closest_lot['quantity'].values[0], target_quantity - accumulated_quantity)
+        formatted_date = format_date_code(date_code)
+        result_row = {
+            'part_number': str(closest_lot['part_number'].values[0]),
+            'lot': str(closest_lot['lot'].values[0]),
+            'DC': str(closest_lot['DC'].values[0]),
+            'date_code': formatted_date,
+            'quantity': str(take_quantity),
+            'store': str(closest_lot['store'].values[0])
+        }
+        result_list.append(result_row)
+        accumulated_quantity += take_quantity
+        if accumulated_quantity >= target_quantity:
+            break
+    return result_list
 
 def main_query(workbook_path, sheet_name):
     df_input_parameters = pd.read_excel(workbook_path, sheet_name=sheet_name, engine='openpyxl')
-
-    result_list = []
+    all_results = []
     for row in df_input_parameters.itertuples(index=False):
         target_part_number = row.part_number
         target_quantity = row.quantity
 
         part_stock = stock_data[(stock_data['part_number'] == target_part_number) & (stock_data['quantity'] != 0)]
 
-        # 按lot分組
-        grouped_by_lot = part_stock.groupby('lot', group_keys=False)
+        # 使用最大和最早 lot 的組合處理
+        result_list = process_stock_by_max_and_earliest(part_stock, target_quantity)
+        all_results.extend(result_list)
 
-        accumulated_quantity = 0
-
-        # 遍歷每個lot
-        for lot, group in grouped_by_lot:
-            # 在每個lot內部按照date_code排序
-            group_sorted_by_date = group.sort_values(by='date_code')
-
-            # 逐個選擇庫存
-            for index, stock_row in group_sorted_by_date.iterrows():
-                take_quantity = min(stock_row['quantity'], target_quantity - accumulated_quantity)
-                formatted_date = format_date_code(stock_row['date_code'])
-                result_row = {
-                    'part_number': str(stock_row['part_number']),
-                    'lot': str(stock_row['lot']),
-                    'DC': str(stock_row['DC']),
-                    'date_code': formatted_date,
-                    'quantity': str(take_quantity),  # 直接設置為take_quantity
-                    'store': str(stock_row['store'])
-                }
-                result_list.append(result_row)
-                accumulated_quantity += take_quantity
-                if accumulated_quantity >= target_quantity:
-                    break
-
-            if accumulated_quantity >= target_quantity:
-                break
-    recommend_df = pd.DataFrame(result_list)
+    recommend_df = pd.DataFrame(all_results)
     return recommend_df
 
 
