@@ -25,13 +25,6 @@ def read_stock_data(workbook_path, sheet_name):
         raise ValueError(f"Sheet name '{sheet_name}' does not exist in the workbook.")
     worksheet = workbook[sheet_name]
 
-    # # Unhide rows
-    # for row in worksheet.row_dimensions:
-    #     worksheet.row_dimensions[row].hidden = False
-    #
-    # # Remove any filters
-    # worksheet.auto_filter.ref = None
-
     # Read specific range (e.g., from B3 to J[last_row]) into a list of lists
     data = [[cell.value for cell in row] for row in worksheet['B3':'J' + str(worksheet.max_row)]]
 
@@ -104,8 +97,8 @@ def main_query(workbook_path, sheet_name):
 
             if accumulated_quantity >= target_quantity:
                 break
-    result_df = pd.DataFrame(result_list)
-    return result_df
+    recommend_df = pd.DataFrame(result_list)
+    return recommend_df
 
 
 if __name__ == "__main__":
