@@ -1,0 +1,70 @@
+1.代碼框架
+	[]1.得到參數表單(Input Parameters):
+		[o] (Input Parameters):part_number/product_number/customer_part_number
+		/quantity/purchase_order/unit_price/currency/invoice_series/delivery_date/customer_no
+	[]2.查詢庫存並扣帳(Query Parameters):
+		[o](Query Parameters):[part_number]/lot/DC/date_code/[quantity]/store/remark
+		[]推薦料號算法
+	[]3.參照相關參數更新表單(Query Parameters):
+		[o](Query Parameters):[part_number]/marking_code/package/MPQ
+	[]4.得到計算參數(Calculation Parameters):
+		[o](Calculation Parameters):[part_number]/[customer_part_number]/[lot]/[DC]/[date_code]/[quantity]/label_copies_large/out_date/sampling/[MPQ]
+			[?](quantity/MPQ)
+		[o][product_number]/[customer_part_number]/[lot]/[DC]/[date_code]/[quantity]/label_copies_small/out_date/[MPQ]
+			[?](quantity/MPQ)
+		[o][product_number]/[customer_part_number]/[lot]/[DC]/[date_code]/[quantity]/label_copies_medium/out_date/[MPQ]
+			[?](quantity/MPQ)
+	[]5.填入出貨紀錄
+		[o]month/day/invoice_series/customer_no/supplier_code/part_number/lot/DC/quantity/customer_part_number/product_number/lot/DC/quantity/marking_code/package/unit_price/currency
+	[]6.傳遞參數給印表機對象
+		[o]product_number/customer_part_number/lot/DC/date_code/quantity/label_copies_large
+		[o]product_number/customer_part_number/lot/DC/date_code/quantity/label_copies_small
+		[o]product_number/customer_part_number/lot/DC/date_code/quantity/label_copies_medium
+	[]7.填入出貨檢驗報告
+		[o]purchase_order/product_number/customer_part_number/lot/quantity/sampling/marking_code
+2.專案目標 
+	[]1.設計交互介面
+		[]ui/csv/cmd
+		[]設定確定斷點
+	[]2.確定傳遞數據類型
+		[]列表嵌套字典
+		[]數據驗證類型
+	[]3.確定專案流程及參數命名
+		[]流程斷點
+		[]統一命名及重編
+	[]4.思考需要提取的功能函數		
+	[]5.確定存取的數據資料庫
+		[]csv
+		[]存取指定參照資料庫
+	[]6.可優化處
+		[]參數順序可視化
+		[]揀料資訊無法保留
+			[]電子化LINE
+	[]7.可能修改處
+		[o]傳參數為字典
+			[o]字典中有列表
+		[]庫存未標準化創建映射字典
+	[]8.推薦算法
+		[]庫存推薦先進先出
+		[]庫存推薦最少lot數
+		[]分配給多個purchase_order
+
+3.待辦事項
+	[]1.整理參照資料庫
+		[o]part_number/marking_code/package/MPQ
+		[o]105E_sampling
+	[]2.小規模測試		
+		[]python揀料推薦
+		[]減料推薦電子化/line介面
+	[]重新命名參數統一化
+		1.需要輸入參數
+			[O]品號/品名/客戶品號/數量/單據/單價/幣別/單號/Customer No/delivery_date
+		2.需要查詢參數
+			[O]LOT/DC/DACTECODE/STORE/REMARK/MARING/PACKAGE/MPQ/Sample/供應商代碼
+		3.需要計算參數
+			[O]OUTDATE/月/日/label_copies(小中大)
+	[]自動加上過期日期
+		[]不可加上日期種類
+		[]是否變更日期詢問使用者
+
+		

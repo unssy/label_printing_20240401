@@ -1,5 +1,7 @@
 import pandas as pd
 from openpyxl import load_workbook
+import os
+
 
 def clear_worksheet(workbook_path, sheet_name):
     # Load the workbook
@@ -39,6 +41,7 @@ def read_stock_data(workbook_path, sheet_name):
 
     return df
 
+
 def write_to_excel(result_df, workbook_path, sheet_name):
     # 打開現有的工作簿
     book = load_workbook(workbook_path)
@@ -53,11 +56,20 @@ def write_to_excel(result_df, workbook_path, sheet_name):
 
     writer.save()
 
+
+def format_date_code(date_code):
+    parsed_date = pd.to_datetime(date_code, errors='coerce')
+    if pd.notna(parsed_date):
+        return parsed_date.strftime('%Y/%m/%d')
+    else:
+        return str(date_code)
+
+
 def main_query(workbook_path, sheet_name):
-    df_Input_Parameters = pd.read_excel(workbook_path, sheet_name=sheet_name,engine='openpyxl')
+    df_input_parameters = pd.read_excel(workbook_path, sheet_name=sheet_name, engine='openpyxl')
 
     result_list = []
-    for row in df_Input_Parameters.itertuples(index=False):
+    for row in df_input_parameters.itertuples(index=False):
         target_part_number = row.part_number
         target_quantity = row.quantity
 
@@ -76,16 +88,9 @@ def main_query(workbook_path, sheet_name):
             # 逐個選擇庫存
             for index, stock_row in group_sorted_by_date.iterrows():
                 take_quantity = min(stock_row['quantity'], target_quantity - accumulated_quantity)
-                date_code = stock_row['date_code']
-                # 嘗試將date_code轉換為日期
-                parsed_date = pd.to_datetime(date_code, errors='coerce')
-                # 如果轉換成功，則進行標準化；否則保留原始字符串
-                if pd.notna(parsed_date):
-                    formatted_date = parsed_date.strftime('%Y/%m/%d')
-                else:
-                    formatted_date = str(date_code)  # 保留原始字符串
+                formatted_date = format_date_code(stock_row['date_code'])
                 result_row = {
-                    'part_number':  str(stock_row['part_number']),
+                    'part_number': str(stock_row['part_number']),
                     'lot': str(stock_row['lot']),
                     'DC': str(stock_row['DC']),
                     'date_code': formatted_date,
@@ -104,8 +109,13 @@ def main_query(workbook_path, sheet_name):
 
 
 if __name__ == "__main__":
-    parameters_worksheet_path: str = r'C:\Users\windows user\PycharmProjects\project_autopacking_20230812\parameters_dataframe.xlsx'
-    stock_workbook_path: str = r'C:\Users\windows user\PycharmProjects\project_autopacking_20230812\(NEW)2023-2.xlsx'
+    # 獲取當前文件的絕對路徑
+    current_file_path = os.path.abspath(__file__)
+    # 獲取當前文件的所在目錄
+    current_directory = os.path.dirname(current_file_path)
+    # 設置parameters_worksheet_path和stock_workbook_path的相對路徑
+    parameters_worksheet_path = os.path.join(current_directory, 'parameters_dataframe.xlsx')
+    stock_workbook_path = os.path.join(current_directory, '(NEW)2023-2.xlsx')
     # clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     stock_data = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
     result_df = main_query(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
