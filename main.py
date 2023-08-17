@@ -1,20 +1,46 @@
-import os
 import pandas as pd
-from Input_Parameters import get_input_parameters
-from Query_Parameters import query_stock, deduct_stock
-from Calculation_Parameters import get_calculation_parameters
-from Delivery_Record import fill_delivery_record
-from Label_Parameters import send_parameters_to_printer
-from OQC_report import fill_oqc_report
+from openpyxl import load_workbook
+from  utinities import *
+import os
+from Input_Parameters import *
+from Query_Parameters import *
+from Calculation_Parameters import *
+from Delivery_Record import *
+from Label_Parameters import *
+from OQC_report import *
 
 
-def main():
+def get_workbook_path(filename):
+    """
+    根據給定的文件名返回在當前腳本所在目錄的絕對路徑。
+
+    參數:
+        filename (str): 要查找的文件名。
+
+    返回:
+        str: 文件的絕對路徑。
+    """
+    current_file_path = os.path.abspath(__file__)
+    current_directory = os.path.dirname(current_file_path)
+
+    workbook_path = os.path.join(current_directory, filename)
+
+    return workbook_path
+
+
+
+if __name__ == "__main__":
     # Step 1: Get Input Parameters
-    input_dataframe = get_input_parameters('parameters_dataframe.xlsx', 'Input_Parameters')
-    stock_dataframe = get_input_parameters('(NEW)2023-2.xlsx', '20230105')
-    clear_worksheet()
+    # clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
+    parameters_worksheet_path = get_workbook_path('parameters_dataframe.xlsx')
+    stock_workbook_path = get_workbook_path('(NEW)2023-2.xlsx')
+    stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
+    input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
+
+    # clear_worksheet()
 
     # Step 2: Query Stock
+    result_df = main_query(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     query_dataframe = query_stock(stock_dataframe, input_dataframe)
     query_dataframe = get_sampling_count(query_dataframe)
     query_dataframe = merge_with_reference(query_dataframe)
@@ -40,5 +66,5 @@ def main():
     oqc_report_dataframe = fill_oqc_report(input_dataframe, delivery_record_dataframe)
     output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
 
-if __name__ == "__main__":
-    main()
+
+
