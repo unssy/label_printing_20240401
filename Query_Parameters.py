@@ -107,4 +107,5 @@ def stock_update(file_path):
 
 if __name__ == "__main__":
     file_path = r"\\192.168.1.220\\神錡\\sample標籤\\出貨標籤\\客戶出貨規範\\崧騰\\出貨明細\\2023倉庫用\\(NEW)2023.xlsx"
-    stock_update(file_path)
+    print(get_sampling_count(100000))
+    # stock_update(file_path)
