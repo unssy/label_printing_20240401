@@ -1,6 +1,7 @@
 import pandas as pd
 from openpyxl import load_workbook
 
+
 def clear_worksheet(workbook_path, sheet_name):
     # Load the workbook
     workbook = load_workbook(workbook_path)
@@ -39,6 +40,7 @@ def read_stock_data(workbook_path, sheet_name):
 
     return df
 
+
 def write_to_excel(result_df, workbook_path, sheet_name):
     # 打開現有的工作簿
     book = load_workbook(workbook_path)
@@ -53,8 +55,9 @@ def write_to_excel(result_df, workbook_path, sheet_name):
 
     writer.save()
 
+
 def main_query(workbook_path, sheet_name):
-    df_Input_Parameters = pd.read_excel(workbook_path, sheet_name=sheet_name,engine='openpyxl')
+    df_Input_Parameters = pd.read_excel(workbook_path, sheet_name=sheet_name, engine='openpyxl')
 
     result_list = []
     for row in df_Input_Parameters.itertuples(index=False):
@@ -85,7 +88,7 @@ def main_query(workbook_path, sheet_name):
                 else:
                     formatted_date = str(date_code)  # 保留原始字符串
                 result_row = {
-                    'part_number':  str(stock_row['part_number']),
+                    'part_number': str(stock_row['part_number']),
                     'lot': str(stock_row['lot']),
                     'DC': str(stock_row['DC']),
                     'date_code': formatted_date,
@@ -104,7 +107,8 @@ def main_query(workbook_path, sheet_name):
 
 
 if __name__ == "__main__":
-    parameters_worksheet_path: str = r'C:\Users\windows user\PycharmProjects\project_autopacking_20230812\parameters_dataframe.xlsx'
+    parameters_worksheet_path: str = (r'C:\Users\windows user\PycharmProjects\project_autopacking_20230812'
+                                      r'\parameters_dataframe.xlsx')
     stock_workbook_path: str = r'C:\Users\windows user\PycharmProjects\project_autopacking_20230812\(NEW)2023-2.xlsx'
     # clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     stock_data = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
