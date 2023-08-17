@@ -96,8 +96,8 @@ def main_query(input_dataframe, stock_dataframe):
         target_quantity = row.quantity
 
         part_stock = stock_dataframe[
-            (stock_dataframe['part_number'] == target_part_number) & (stock_dataframe['quantity'] != 0)]
-
+            (stock_dataframe['part_number'].str.upper() == target_part_number.upper()) &
+            (stock_dataframe['quantity'] != 0)]
         # 使用最大和最早 lot 的組合處理
         result_list = process_stock_by_max_and_earliest(part_stock, target_quantity)
         all_results.extend(result_list)
