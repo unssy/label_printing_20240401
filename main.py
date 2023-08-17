@@ -65,5 +65,3 @@ if __name__ == "__main__":
     oqc_report_dataframe = fill_oqc_report(input_dataframe, delivery_record_dataframe)
     output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
 
-
-

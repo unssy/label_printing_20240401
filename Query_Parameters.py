@@ -1,7 +1,8 @@
 from  utinities import *
 import pandas as pd
 
-def get_sampling_count(dataframe):
+def get_sampling_count(shipment_count):
+
     shipment_bounds = [2, 9, 16, 26, 51, 91, 151, 281, 501, 1201, 3201, 10001, 35001, 150001, 500001]
     sampling_counts = [2, 3, 5, 8, 13, 20, 32, 50, 80, 125, 200, 315, 500, 800, 1250]
 
