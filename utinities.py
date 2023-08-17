@@ -52,14 +52,16 @@ def save_workbook(file_path, data_range, sheet_name):
         data_range.to_excel(writer, sheet_name=sheet_name, index=False)
 
 
-def output_data(filename, sheetname, dataframe):
+def output_data(workbook_path, sheet_name, dataframe):
     """
     將給定的 DataFrame 寫入指定的 Excel 文件和工作表。
 
     參數:
-        filename (str): Excel 文件的名稱或路徑。
-        sheetname (str): 工作表名稱。
+        workbook_path (str): Excel 文件的名稱或路徑。
+        sheet_name (str): 工作表名稱。
         dataframe (pd.DataFrame): 要寫入的數據。
     """
-    with pd.ExcelWriter(filename, engine='openpyxl', mode='a') as writer:
-        dataframe.to_excel(writer, sheet_name=sheetname, index=False)
+    with pd.ExcelWriter(workbook_path, engine='openpyxl', mode='a') as writer:
+        if sheet_name in writer.book.sheetnames:
+            writer.book.remove(writer.book[sheet_name])
+        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)

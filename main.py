@@ -40,11 +40,10 @@ if __name__ == "__main__":
     # clear_worksheet()
 
     # Step 2: Query Stock
-    result_df = main_query(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
-    query_dataframe = query_stock(stock_dataframe, input_dataframe)
+    query_dataframe = main_query(input_dataframe, stock_dataframe)
     query_dataframe = get_sampling_count(query_dataframe)
     query_dataframe = merge_with_reference(query_dataframe)
-    output_data('parameters_dataframe.xlsx','Query_Parameters',query_dataframe)
+    output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
 
     # Step 3: Deduct Stock
     if input("Do you want to deduct stock? (yes/no): ").strip().lower() == 'yes':

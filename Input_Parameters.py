@@ -22,6 +22,7 @@ def read_stock_data(workbook_path, sheet_name):
 
     columns = ['supplier_code', 'part_number', 'lot', "date_code", 'DC', 'QTY', 'quantity', 'Y', 'store']
     df = pd.DataFrame(data[1:], columns=columns)
+    df = df.drop(columns=['supplier_code', 'QTY', 'Y'])
     df['remark'] = remarks[1:]
 
     return df
