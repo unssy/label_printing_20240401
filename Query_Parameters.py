@@ -1,5 +1,6 @@
 from  utinities import *
 import pandas as pd
+import win32com.client as win32
 
 def get_sampling_count(dataframe):
 
@@ -81,7 +82,8 @@ def process_stock_by_max_and_earliest(part_stock, target_quantity):
             'DC': str(closest_lot['DC'].values[0]),
             'date_code': formatted_date,
             'quantity': str(take_quantity),
-            'store': str(closest_lot['store'].values[0])
+            'store': str(closest_lot['store'].values[0]),
+            'row_index': str(closest_lot['row_index'].values[0])
         }
         result_list.append(result_row)
         accumulated_quantity += take_quantity
@@ -135,16 +137,46 @@ def display_total_shipment(data_range, input_date):
     total_shipment = data_range[input_date].sum()
     print("出貨總數為:", total_shipment)
 
+def convert_to_mm_dd(date_str):
+    # 提取月份和日期
+    month = date_str[5:6]
+    day = date_str[6:8]
+    return f"{month}/{day}"
 
 
 # 主函數封裝整個流程
-def stock_update(file_path):
-    wb = open_workbook(file_path)
-    data_range = read_data_range(wb)
-    input_date, customer = collect_shipment_info()
-    insert_shipment_column(data_range, input_date, customer)
-    debit_sheet = pd.read_excel(wb, sheet_name="扣帳表")
-    update_stock_data(debit_sheet, data_range)
-    display_total_shipment(data_range, input_date)
-    save_workbook(file_path, data_range)
+def deduct_stock(workbook_path, sheet_name, dataframe):
+    # 打开 Excel
+    excel = win32.gencache.EnsureDispatch('Excel.Application')
+    excel.Visible = True
+    wb = excel.Workbooks.Open(workbook_path, ReadOnly=True, UpdateLinks=0)
+    ws = wb.Worksheets(sheet_name)
+
+    # 尋找特定日期 delivery_date之前的最後一列 column=k
+    delivery_date = dataframe['delivery_date'].iloc[0]
+    delivery_date_format = convert_to_mm_dd(str(delivery_date))
+    col_k = None
+    for col in range(ws.UsedRange.Columns.Count, 0, -1):  # Start from the last used column and move backward
+        cell_value = ws.Cells(1, col).Value
+        if cell_value and cell_value < delivery_date_format:
+            col_k = col+1
+            break
+
+    if col_k is None:
+        print("找不到特定日期之前的最後一列。")
+        return
+
+    # 插入新列
+    ws.Columns(col_k).Insert()
+
+    # 存储出货信息
+    ws.Cells(1, col_k).Value = delivery_date_format
+    ws.Cells(2, col_k).Value = dataframe['customer_no']
+    for i, row in dataframe.iterrows():
+        row_idx = row['row_index']
+        qty = row['quantity']
+        ws.Cells(row_idx, col_k).Value = qty
+
+    # wb.Save()
+    excel.Application.Quit()
 

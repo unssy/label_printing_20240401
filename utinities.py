@@ -65,3 +65,14 @@ def output_data(workbook_path, sheet_name, dataframe):
         if sheet_name in writer.book.sheetnames:
             writer.book.remove(writer.book[sheet_name])
         dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
+
+
+def ask_deduct_stock():
+    """
+    Ask the user if they want to deduct stock.
+
+    Returns:
+        bool: True if the answer is '1', False otherwise.
+    """
+    response = input("Do you want to deduct stock? (Enter 1 for yes, 2 for no): ").strip()
+    return response == '1'

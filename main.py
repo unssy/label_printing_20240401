@@ -34,8 +34,8 @@ if __name__ == "__main__":
     # clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     parameters_worksheet_path = get_workbook_path('parameters_dataframe.xlsx')
     stock_workbook_path = get_workbook_path('(NEW)2023-2.xlsx')
-    stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
     input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
+    stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
 
     # clear_worksheet()
 
@@ -43,11 +43,17 @@ if __name__ == "__main__":
     query_dataframe = main_query(input_dataframe, stock_dataframe)
     query_dataframe = get_sampling_count(query_dataframe)
     query_dataframe = merge_with_reference(query_dataframe)
+    query_dataframe['delivery_date'] = input_dataframe['delivery_date'].iloc[0]
+    query_dataframe['customer_no'] = input_dataframe['customer_no'].iloc[0]
     output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
 
     # Step 3: Deduct Stock
-    if input("Do you want to deduct stock? (yes/no): ").strip().lower() == 'yes':
-        deduct_stock(query_dataframe, '(NEW)2023-2.xlsx')
+    if ask_deduct_stock():
+        print("Executing the desired function...")
+        deduct_stock(workbook_path=stock_workbook_path, sheet_name='20230105', dataframe=query_dataframe)
+    else:
+        print("Exiting the program...")
+        exit()
 
     # Step 4: Get Calculation Parameters
     calculation_dataframe = get_calculation_parameters(input_dataframe, query_dataframe)
