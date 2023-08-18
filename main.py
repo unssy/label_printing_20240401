@@ -66,6 +66,9 @@ if __name__ == "__main__":
     output_data('parameters_dataframe.xlsx','Calculation_Parameters',calculation_dataframe)
 
     # Step 5: Fill Delivery Record
+    columns_to_remove = ['small_label_quantity','small_label_copies','medium_label_quantity','medium_label_copies','large_label_quantity','large_label_copies','out_date','MPQ']
+    calculation_dataframe = calculation_dataframe.drop(columns=columns_to_remove, errors='ignore')
+    desired_order = ['part_number','product_number','customer_part_number','lot','DC','date_code','quantity','label_copies_large','label_copies_medium','label_copies_small','out_date','MPQ']
     delivery_record_dataframe = fill_delivery_record(input_dataframe, query_dataframe)
     output_data('parameters_dataframe.xlsx','delivery_record',delivery_record_dataframe)
 
