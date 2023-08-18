@@ -91,6 +91,7 @@ def process_stock_by_max_and_earliest(part_stock, target_quantity):
             break
     return result_list
 
+
 def main_query(input_dataframe, stock_dataframe):
     all_results = []
     for row in input_dataframe.itertuples(index=False):
@@ -108,75 +109,78 @@ def main_query(input_dataframe, stock_dataframe):
     return recommend_df
 
 
-# 尋找特定日期之前的最後一列
-def find_last_column_before_date(data, input_date):
-    for i in range(data.columns.size - 1, -1, -1):
-        if pd.to_datetime(data.columns[i]) < pd.to_datetime(input_date):
-            return i
-    return -1
-
-# 插入新列並存儲出貨信息
-def insert_shipment_column(data_range, input_date, customer):
-    column_number = find_last_column_before_date(data_range, input_date)
-    data_range.insert(column_number + 1, input_date, 0)
-    data_range.loc[0, column_number + 1] = customer
-
-# 遍歷扣帳表並更新庫存數據
-
-def update_stock_data(debit_sheet, data_range):
-    for index, row in debit_sheet.iterrows():
-        inputPartNo = row[2]
-        inputlot = row[3]
-        inputdate = row[5]
-        inputQty = row[6]
-    # ...
-    pass
-
-# 顯示出貨總數
-def display_total_shipment(data_range, input_date):
-    total_shipment = data_range[input_date].sum()
-    print("出貨總數為:", total_shipment)
-
 def convert_to_mm_dd(date_str):
-    # 提取月份和日期
     month = date_str[5:6]
     day = date_str[6:8]
     return f"{month}/{day}"
 
 
-# 主函數封裝整個流程
-def deduct_stock(workbook_path, sheet_name, dataframe):
-    # 打开 Excel
-    excel = win32.gencache.EnsureDispatch('Excel.Application')
-    excel.Visible = True
-    wb = excel.Workbooks.Open(workbook_path, ReadOnly=True, UpdateLinks=0)
-    ws = wb.Worksheets(sheet_name)
-
-    # 尋找特定日期 delivery_date之前的最後一列 column=k
-    delivery_date = dataframe['delivery_date'].iloc[0]
-    delivery_date_format = convert_to_mm_dd(str(delivery_date))
-    col_k = None
-    for col in range(ws.UsedRange.Columns.Count, 0, -1):  # Start from the last used column and move backward
+def find_insert_column(ws, delivery_date_format):
+    for col in range(ws.UsedRange.Columns.Count, 0, -1):
         cell_value = ws.Cells(1, col).Value
         if cell_value and cell_value < delivery_date_format:
-            col_k = col+1
-            break
+            return col + 1
+    return None
 
-    if col_k is None:
-        print("找不到特定日期之前的最後一列。")
-        return
 
-    # 插入新列
-    ws.Columns(col_k).Insert()
+def open_excel_workbook(workbook_path, WriteResPassword):
+    excel = win32.gencache.EnsureDispatch('Excel.Application')
+    excel.Visible = True
+    try:
+        wb = excel.Workbooks.Open(
+            workbook_path,
+            UpdateLinks=0,
+            ReadOnly=False,
+            WriteResPassword=WriteResPassword
+        )
 
-    # 存储出货信息
-    ws.Cells(1, col_k).Value = delivery_date_format
-    ws.Cells(2, col_k).Value = dataframe['customer_no']
-    for i, row in dataframe.iterrows():
-        row_idx = row['row_index']
-        qty = row['quantity']
-        ws.Cells(row_idx, col_k).Value = qty
+        # 检查工作簿是否以只读模式打开
+        if wb.ReadOnly:
+            print("檔案已被開啟")
+            wb.Close(False)
+            excel.Application.Quit()
+            exit()
+        else:
+            return excel, wb
 
-    # wb.Save()
-    excel.Application.Quit()
+    except Exception as e:
+        print(f"Error: {e}")
+        excel.Application.Quit()
+        exit()
 
+
+def autofill_formula(ws, start_col_idx, row_idx, end_col_idx):
+    source_cell = ws.Cells(row_idx, start_col_idx)
+    dest_range = ws.Range(ws.Cells(row_idx, start_col_idx), ws.Cells(row_idx, end_col_idx))
+    source_cell.AutoFill(Destination=dest_range, Type=win32.constants.xlFillDefault)
+
+
+def deduct_stock(workbook_path, sheet_name, dataframe):
+    try:
+        excel, wb = open_excel_workbook(workbook_path,WriteResPassword='369')
+        ws = wb.Worksheets(sheet_name)
+        if ws.AutoFilterMode:
+            ws.AutoFilterMode = False
+
+        delivery_date = convert_to_mm_dd(str(dataframe['delivery_date'].iloc[0]))
+        insert_col_idx = find_insert_column(ws, delivery_date)
+        if insert_col_idx is None:
+            print("找不到特定日期之前的最後一列。")
+            return
+
+        ws.Columns(insert_col_idx).Insert()
+        ws.Cells(1, insert_col_idx).Value = delivery_date
+        ws.Cells(2, insert_col_idx).Value = dataframe['customer_no'].iloc[0]
+        for _, row in dataframe.iterrows():
+            ws.Cells(row['row_index'], insert_col_idx).Value = row['quantity']
+
+        autofill_formula(ws, insert_col_idx - 1, 3, insert_col_idx)
+
+        print("出貨總數為: ", int(ws.Cells(3, insert_col_idx).Value))
+        ws.Range("A3:J3").AutoFilter()
+
+    except Exception as e:
+        print(f"Error: {e}")
+    finally:
+        wb.Close()
+        excel.Application.Quit()
