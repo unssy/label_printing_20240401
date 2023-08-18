@@ -110,77 +110,71 @@ def main_query(input_dataframe, stock_dataframe):
 
 
 def convert_to_mm_dd(date_str):
-    month = date_str[5:6]
+    """Convert date string from yyyymmdd to mm/dd format."""
+    month = date_str[4:6]
     day = date_str[6:8]
     return f"{month}/{day}"
 
 
-def find_insert_column(ws, delivery_date_format):
+def find_insert_column(ws, target_date):
+    """Find the column index before which the new date column should be inserted."""
     for col in range(ws.UsedRange.Columns.Count, 0, -1):
         cell_value = ws.Cells(1, col).Value
-        if cell_value and cell_value < delivery_date_format:
+        if cell_value and cell_value < target_date:
             return col + 1
     return None
 
 
-def open_excel_workbook(workbook_path, WriteResPassword):
+def open_excel_workbook(file_path, password):
+    """Open an Excel workbook with given write password."""
     excel = win32.gencache.EnsureDispatch('Excel.Application')
     excel.Visible = True
     try:
         wb = excel.Workbooks.Open(
-            workbook_path,
+            file_path,
             UpdateLinks=0,
             ReadOnly=False,
-            WriteResPassword=WriteResPassword
+            WriteResPassword=password,
+            IgnoreReadOnlyRecommended=True
         )
-
-        # 检查工作簿是否以只读模式打开
         if wb.ReadOnly:
-            print("檔案已被開啟")
-            wb.Close(False)
-            excel.Application.Quit()
-            exit()
-        else:
-            return excel, wb
-
+            raise Exception("檔案已被開啟")
+        return excel, wb
     except Exception as e:
         print(f"Error: {e}")
         excel.Application.Quit()
         exit()
 
 
-def autofill_formula(ws, start_col_idx, row_idx, end_col_idx):
-    source_cell = ws.Cells(row_idx, start_col_idx)
-    dest_range = ws.Range(ws.Cells(row_idx, start_col_idx), ws.Cells(row_idx, end_col_idx))
+def autofill_formula(ws, source_col, row, target_col):
+    """Autofill formula in Excel from source column to target column for the given row."""
+    source_cell = ws.Cells(row, source_col)
+    dest_range = ws.Range(ws.Cells(row, source_col), ws.Cells(row, target_col))
     source_cell.AutoFill(Destination=dest_range, Type=win32.constants.xlFillDefault)
 
-
-def deduct_stock(workbook_path, sheet_name, dataframe):
+def deduct_stock(file_path, sheet, data_df, password='369'):
+    """Deduct stock based on provided dataframe."""
     try:
-        excel, wb = open_excel_workbook(workbook_path,WriteResPassword='369')
-        ws = wb.Worksheets(sheet_name)
-        if ws.AutoFilterMode:
-            ws.AutoFilterMode = False
+        excel, wb = open_excel_workbook(file_path, password)
+        ws = wb.Worksheets[sheet]
 
-        delivery_date = convert_to_mm_dd(str(dataframe['delivery_date'].iloc[0]))
-        insert_col_idx = find_insert_column(ws, delivery_date)
-        if insert_col_idx is None:
+        delivery_date = convert_to_mm_dd(str(data_df['delivery_date'].iloc[0]))
+        col_to_insert = find_insert_column(ws, delivery_date)
+        if col_to_insert is None:
             print("找不到特定日期之前的最後一列。")
             return
 
-        ws.Columns(insert_col_idx).Insert()
-        ws.Cells(1, insert_col_idx).Value = delivery_date
-        ws.Cells(2, insert_col_idx).Value = dataframe['customer_no'].iloc[0]
-        for _, row in dataframe.iterrows():
-            ws.Cells(row['row_index'], insert_col_idx).Value = row['quantity']
+        ws.Columns(col_to_insert).Insert()
+        ws.Cells(1, col_to_insert).Value = delivery_date
+        ws.Cells(2, col_to_insert).Value = data_df['customer_no'].iloc[0]
+        for _, row in data_df.iterrows():
+            ws.Cells(row['row_index'], col_to_insert).Value = row['quantity']
 
-        autofill_formula(ws, insert_col_idx - 1, 3, insert_col_idx)
+        autofill_formula(ws, col_to_insert - 1, 3, col_to_insert)
 
-        print("出貨總數為: ", int(ws.Cells(3, insert_col_idx).Value))
-        ws.Range("A3:J3").AutoFilter()
-
+        print("出貨總數為: ", int(ws.Cells(3, col_to_insert).Value))
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        wb.Close()
+        wb.Close(SaveChanges=False)
         excel.Application.Quit()

@@ -50,13 +50,19 @@ if __name__ == "__main__":
     # Step 3: Deduct Stock
     if ask_deduct_stock():
         print("Executing the desired function...")
-        deduct_stock(workbook_path=stock_workbook_path, sheet_name='20230105', dataframe=query_dataframe)
+        deduct_stock(file_path=stock_workbook_path, sheet='20230105', data_df=query_dataframe)
     else:
         print("Exiting the program...")
         exit()
 
     # Step 4: Get Calculation Parameters
-    calculation_dataframe = get_calculation_parameters(input_dataframe, query_dataframe)
+    calculation_dataframe = query_dataframe.merge(input_dataframe[['part_number', 'product_number', 'customer_part_number']], on='part_number', how='left')
+    columns_to_remove = ['store', 'row_index', 'remark', 'sampling', 'marking_code',]
+    desired_order = ['part_number','product_number','customer_part_number','lot','DC','date_code','quantity','label_copies_large','label_copies_medium','label_copies_small','out_date','MPQ']
+    calculation_dataframe = calculation_dataframe[desired_order]
+    calculation_dataframe = calculation_dataframe.drop(columns=columns_to_remove, errors='ignore')
+    calculation_dataframe = calculate_month_diff_dataframe(calculation_dataframe)
+    calculation_dataframe = calculate_label_copies_dataframe(calculation_dataframe)
     output_data('parameters_dataframe.xlsx','Calculation_Parameters',calculation_dataframe)
 
     # Step 5: Fill Delivery Record
