@@ -106,6 +106,15 @@ def main_query(input_dataframe, stock_dataframe):
         all_results.extend(result_list)
 
     recommend_df = pd.DataFrame(all_results)
+    # 使用 'part_number' 列合併 recommend_df 和 input_dataframe 中的 'product_number' 列
+    recommend_df = recommend_df.merge(input_dataframe[['part_number', 'product_number']], on='part_number', how='left')
+    recommend_df['delivery_date'] = input_dataframe['delivery_date'].iloc[0]
+    recommend_df['customer_no'] = input_dataframe['customer_no'].iloc[0]
+    recommend_df = get_sampling_count(recommend_df)
+    recommend_df = merge_with_reference(recommend_df)
+    desired_order = ['part_number', 'product_number','lot', 'DC', 'date_code', 'quantity',
+                     'store', 'row_index', 'remark', 'sampling', 'marking_code', 'package','MPQ','delivery_date','customer_no']
+    recommend_df = recommend_df[desired_order]
     return recommend_df
 
 
