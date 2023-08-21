@@ -52,15 +52,14 @@ if __name__ == "__main__":
         print("Exiting the program...")
         exit()
 
-    # # Step 4: Get Calculation Parameters
-    # calculation_dataframe = query_dataframe.merge(input_dataframe[['part_number', 'product_number', 'customer_part_number']], on='part_number', how='left')
-    # columns_to_remove = ['store', 'row_index', 'remark', 'sampling', 'marking_code',]
-    # desired_order = ['part_number','product_number','customer_part_number','lot','DC','date_code','quantity','label_copies_large','label_copies_medium','label_copies_small','out_date','MPQ']
-    # calculation_dataframe = calculation_dataframe[desired_order]
-    # calculation_dataframe = calculation_dataframe.drop(columns=columns_to_remove, errors='ignore')
-    # calculation_dataframe = calculate_month_diff_dataframe(calculation_dataframe)
-    # calculation_dataframe = calculate_label_copies_dataframe(calculation_dataframe)
-    # output_data('parameters_dataframe.xlsx','Calculation_Parameters',calculation_dataframe)
+    # Step 4: Get Calculation Parameters
+    calculation_dataframe = query_dataframe.merge(input_dataframe[['part_number', 'customer_part_number']], on='part_number', how='left')
+    calculation_dataframe = calculate_month_diff_dataframe(calculation_dataframe)
+    calculation_dataframe = calculate_label_copies_dataframe(calculation_dataframe)
+    desired_order = ['part_number', 'product_number', 'customer_part_number', 'lot', 'DC', 'date_code', 'quantity',
+                     'small_label_copies', 'small_label_quantity', 'medium_label_copies', 'medium_label_quantity', 'large_label_copies', 'large_label_quantity', 'out_date',]
+    calculation_dataframe = calculation_dataframe[desired_order]
+    output_data('parameters_dataframe.xlsx','Calculation_Parameters',calculation_dataframe)
 
     # Step 5: Fill Delivery Record
     calculation_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Calculation_Parameters')
