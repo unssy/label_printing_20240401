@@ -1,6 +1,12 @@
 import pandas as pd
 from openpyxl import load_workbook
+import json
 import os
+
+def load_config(file_path):
+    with open(file_path, 'r') as file:
+        config = json.load(file)
+    return config
 
 def read_excel_data(workbook_path, sheet_name):
     """
@@ -31,7 +37,11 @@ def clear_worksheet(workbook_path, sheet_name):
             cell.value = None
 
 def format_date_code(date_code):
-    parsed_date = pd.to_datetime(date_code, errors='coerce')
+    date_str = str(date_code)
+    # 將YYYYMMDD格式的日期碼轉換為YYYY/MM/DD格式
+    if len(date_str) == 8:
+        date_str = f'{date_str[:4]}/{date_str[4:6]}/{date_str[6:]}'
+    parsed_date = pd.to_datetime(date_str, errors='coerce')
     if pd.notna(parsed_date):
         return parsed_date.strftime('%Y/%m/%d')
     else:
@@ -51,21 +61,20 @@ def save_workbook(file_path, data_range, sheet_name):
     with pd.ExcelWriter(file_path) as writer:
         data_range.to_excel(writer, sheet_name=sheet_name, index=False)
 
-
 def output_data(workbook_path, sheet_name, dataframe):
-    """
-    將給定的 DataFrame 寫入指定的 Excel 文件和工作表。
+    try:
+        with pd.ExcelWriter(workbook_path, engine='openpyxl', mode='a') as writer:
+            if sheet_name in writer.book.sheetnames:
+                writer.book.remove(writer.book[sheet_name])
 
-    參數:
-        workbook_path (str): Excel 文件的名稱或路徑。
-        sheet_name (str): 工作表名稱。
-        dataframe (pd.DataFrame): 要寫入的數據。
-    """
-    with pd.ExcelWriter(workbook_path, engine='openpyxl', mode='a') as writer:
-        if sheet_name in writer.book.sheetnames:
-            writer.book.remove(writer.book[sheet_name])
-        dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
+            dataframe.to_excel(writer, sheet_name=sheet_name, index=False)
 
+    except PermissionError as e:
+        print(f"PermissionError: {e}")
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        print("Ensure that the file is closed.")
 
 def ask_deduct_stock():
     """

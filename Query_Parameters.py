@@ -61,7 +61,8 @@ def merge_with_reference(dataframe):
     return merged_dataframe
 
 def process_stock_by_max_and_earliest(part_stock, target_quantity):
-    part_stock_sorted = part_stock.sort_values(by=['date_code'], ascending=True)
+    part_stock['date_code'] = part_stock['date_code'].map(format_date_code)
+    part_stock_sorted = part_stock.sort_values(by=['date_code'], ascending=True, na_position='last')
     result_list = []
     accumulated_quantity = 0
 
@@ -108,6 +109,7 @@ def main_query(input_dataframe, stock_dataframe):
     recommend_df = pd.DataFrame(all_results)
     # 使用 'part_number' 列合併 recommend_df 和 input_dataframe 中的 'product_number' 列
     recommend_df = recommend_df.merge(input_dataframe[['part_number', 'product_number']], on='part_number', how='left')
+    input_dataframe['delivery_date'] = input_dataframe['delivery_date'].map(format_date_code)
     recommend_df['delivery_date'] = input_dataframe['delivery_date'].iloc[0]
     recommend_df['customer_no'] = input_dataframe['customer_no'].iloc[0]
     recommend_df = get_sampling_count(recommend_df)

@@ -13,35 +13,33 @@ from OQC_report import *
 def get_workbook_path(filename):
     """
     根據給定的文件名返回在當前腳本所在目錄的絕對路徑。
-
     參數:
         filename (str): 要查找的文件名。
-
     返回:
         str: 文件的絕對路徑。
     """
     current_file_path = os.path.abspath(__file__)
     current_directory = os.path.dirname(current_file_path)
-
     workbook_path = os.path.join(current_directory, filename)
-
     return workbook_path
-
 
 
 if __name__ == "__main__":
     # Step 1: Get Input Parameters
     # clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
-    parameters_worksheet_path = get_workbook_path('parameters_dataframe.xlsx')
-    stock_workbook_path = get_workbook_path('(NEW)2023-2.xlsx')
-    input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
-    stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name='20230105')
+    # 指定你的配置文件路径
+    config_file_path = get_workbook_path('config.json')
+    config = load_config(config_file_path)
+    parameters_worksheet_path = config['parameters_worksheet_path']
+    stock_workbook_path = config['stock_workbook_path']
+    stock_workbook_sheet = config['stock_workbook_sheet']
 
+    input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
+    stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name=stock_workbook_sheet)
     # clear_worksheet()
 
     # Step 2: Query Stock
     query_dataframe = main_query(input_dataframe, stock_dataframe)
-
     output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
 
     # Step 3: Deduct Stock
