@@ -40,28 +40,29 @@ def merge_with_reference(dataframe):
     # 讀取參照表
     parameters_db = pd.read_csv('parameters_database.csv')
 
-    # 將 part_number 設置為參照表的索引
-    parameters_db.set_index('part_number', inplace=True)
+    # 在合併前將 'part_number' 列轉換為小寫
+    lower_part_number_column = 'lower_part_number'
+    try:
+        merged_dataframe = pd.merge(dataframe.rename(columns={'part_number': lower_part_number_column}),
+                                    parameters_db.rename(columns={'part_number': lower_part_number_column}),
+                                    on=lower_part_number_column, how='left', suffixes=('', '_ref'))
+    except KeyError:
+        # 若 'part_number' 列不存在，填充 NaN 並繼續進行合併
+        merged_dataframe = pd.merge(dataframe, parameters_db, left_on='part_number', right_on='part_number', how='left')
 
-    # 確保 your_dataframe 有 part_number 列
-    if 'part_number' not in dataframe.columns:
-        raise ValueError("Input DataFrame must contain a 'part_number' column.")
+    # 去除多餘的列
+    if lower_part_number_column in merged_dataframe.columns:
+        merged_dataframe.drop(columns=[lower_part_number_column], inplace=True)
 
-    # 將 part_number 設置為您的 DataFrame 的索引
-    dataframe.set_index('part_number', inplace=True)
-
-    # 使用 join 方法進行合併
-    merged_dataframe = dataframe.join(parameters_db, how='left')
-
-    # 將 part_number 轉回普通列
-    merged_dataframe.reset_index(inplace=True)
+    # 填充 NaN 並將 'MPQ' 列轉換為整數
     merged_dataframe['MPQ'].fillna(0, inplace=True)
     merged_dataframe['MPQ'] = merged_dataframe['MPQ'].astype(int)
 
     return merged_dataframe
 
 def process_stock_by_max_and_earliest(part_stock, target_quantity):
-    part_stock['date_code'] = part_stock['date_code'].map(format_date_code)
+    part_stock = part_stock.copy()
+    part_stock['date_code'] = part_stock['date_code'].apply(format_date_code)
     part_stock_sorted = part_stock.sort_values(by=['date_code'], ascending=True, na_position='last')
     result_list = []
     accumulated_quantity = 0
@@ -138,6 +139,7 @@ def find_insert_column(ws, target_date):
 
 def open_excel_workbook(file_path, password):
     """Open an Excel workbook with given write password."""
+    win32.gencache.EnsureModule('{00020813-0000-0000-C000-000000000046}', 0, 1, 9)
     excel = win32.gencache.EnsureDispatch('Excel.Application')
     excel.Visible = True
     try:
@@ -163,8 +165,10 @@ def autofill_formula(ws, source_col, row, target_col):
     dest_range = ws.Range(ws.Cells(row, source_col), ws.Cells(row, target_col))
     source_cell.AutoFill(Destination=dest_range, Type=win32.constants.xlFillDefault)
 
-def deduct_stock(file_path, sheet, data_df, password='369'):
+def deduct_stock(file_path, sheet, data_df, password):
     """Deduct stock based on provided dataframe."""
+    excel = None
+    wb = None  # Initialize wb to None before the try block
     try:
         excel, wb = open_excel_workbook(file_path, password)
         ws = wb.Worksheets[sheet]
@@ -187,5 +191,7 @@ def deduct_stock(file_path, sheet, data_df, password='369'):
     except Exception as e:
         print(f"Error: {e}")
     finally:
-        wb.Close(SaveChanges=False)
-        excel.Application.Quit()
+        if wb is not None:
+            wb.Close(SaveChanges=False)
+        if excel is not None:
+            excel.Application.Quit()
