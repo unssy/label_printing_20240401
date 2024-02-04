@@ -3,27 +3,53 @@ from datetime import datetime
 import math
 
 # 定義一個函數來計算日期差距
-def calculate_month_diff_dataframe(df: pd.DataFrame, date_column: str = 'date_code') -> pd.DataFrame:
+def calculate_month_diff_dataframe(df: pd.DataFrame, date_column: str = 'date_code', threshold_months: int = 24) -> pd.DataFrame:
     """
     計算 dataframe 中指定日期欄位與當前日期的月份差距，並將結果存儲在新的 'out_date' 欄位中。
+    同時，新增 'expired' 欄位標記超過指定月份的項目。
 
     參數:
         df (pd.DataFrame): 輸入的 dataframe。
         date_column (str): 包含日期資料的欄位名稱。預設為 'date_code'.
+        threshold_months (int): 超過指定月份被標記為 'expired'。預設為 24.
 
     返回:
-        pd.DataFrame: 包含新的 'out_date' 欄位的 dataframe。
+        pd.DataFrame: 包含新的 'out_date' 和 'expired' 欄位的 dataframe。
     """
+    today = datetime.today()
 
-    def month_diff(date_str):
-        date_format = "%Y/%m/%d"
-        date_object = datetime.strptime(date_str, date_format)
+    df['out_date'] = df[date_column].apply(lambda date_str: (today.year - datetime.strptime(date_str, "%Y/%m/%d").year) * 12 + today.month - datetime.strptime(date_str, "%Y/%m/%d").month)
+    df['expired'] = df['out_date'] > threshold_months
+    # 對 'marking_code' 包含 'YM'、'ym'、'YW'、'yw' 的行，將 'expired' 設為 False
+    df.loc[df['marking_code'].str.upper().str.contains('|'.join(['YM', 'YW']), na=False), 'expired'] = False
 
-        today = datetime.today()
-        return (today.year - date_object.year) * 12 + today.month - date_object.month
-
-    df['out_date'] = df[date_column].apply(month_diff)
     return df
+
+def update_columns_based_on_expired(df: pd.DataFrame):
+    """
+    根據 'expired' 欄位的值更新 'lot' 和 'date_code' 欄位。
+
+    參數:
+        df (pd.DataFrame): 輸入的 dataframe。
+
+    返回:
+        pd.DataFrame: 更新後的 dataframe。
+    """
+    mapping_dict = {12: 'A', 24: 'B', 36: 'C', 48: 'D', 60: 'E', 72: 'F', 84: 'G', 96: 'H', 108: 'I'}
+    df['new_lot'] = df['lot']
+    df['new_DC'] = df['DC']
+    df['new_date_code'] = df['date_code']
+    # 根據 'expired' 的條件更新 'lot' 和 'date_code' 使用字典
+    for threshold, label in mapping_dict.items():
+        mask = df['expired'] & (df['out_date'] > threshold)
+        df.loc[mask, 'new_lot'] = df.loc[mask, 'lot'] + label
+        df.loc[mask, 'new_date_code'] = (
+                    pd.to_datetime(df.loc[mask, 'date_code']) + pd.DateOffset(months=threshold)).dt.strftime("%Y/%m/%d")
+        df.loc[mask, 'new_DC'] = (pd.to_datetime(df.loc[mask, 'DC'].astype(str).str[:2] + '0101', format='%y%m%d') + pd.DateOffset(years=int(threshold/12))).dt.strftime("%y") + df.loc[mask, 'DC'].str[-2:]
+
+    return df
+
+
 # def process_MPQ_1000(row):
 #     quantity = row['quantity']
 #

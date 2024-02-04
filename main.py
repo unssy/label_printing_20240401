@@ -1,7 +1,3 @@
-import pandas as pd
-from openpyxl import load_workbook
-from  utinities import *
-import os
 from Input_Parameters import *
 from Query_Parameters import *
 from Calculation_Parameters import *
@@ -28,12 +24,13 @@ if __name__ == "__main__":
     # Step 1: Get Input Parameters
     # clear_worksheet(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     # 指定你的配置文件路径
-    config_file_path = get_workbook_path('config.json')
-    config = load_config(config_file_path)
-    parameters_worksheet_path = config['parameters_worksheet_path']
-    stock_workbook_path = config['stock_workbook_path']
-    stock_workbook_sheet = config['stock_workbook_sheet']
+    config = load_config(get_workbook_path('config.json'))
 
+    parameters_worksheet_path = config.get('parameters_worksheet_path', '')
+    stock_workbook_path = config.get('stock_workbook_path', '')
+    stock_workbook_sheet = config.get('stock_workbook_sheet', '')
+    stock_password = config.get('stock_password', '')
+    parameters_database = config.get('parameters_database.csv', '')
     input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name=stock_workbook_sheet)
     # clear_worksheet()
@@ -42,17 +39,18 @@ if __name__ == "__main__":
     query_dataframe = main_query(input_dataframe, stock_dataframe)
     output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
 
-    # Step 3: Deduct Stock
-    if ask_deduct_stock():
-        print("Executing the desired function...")
-        deduct_stock(file_path=stock_workbook_path, sheet='20230105', data_df=query_dataframe)
-    else:
-        print("Exiting the program...")
-        exit()
+    # # Step 3: Deduct Stock
+    # if ask_deduct_stock():
+    #     print("Executing the desired function...")
+    #     deduct_stock(file_path=stock_workbook_path, sheet=stock_workbook_sheet, data_df=query_dataframe, password=stock_password)
+    # else:
+    #     print("Exiting the program...")
+    #     exit()
 
     # Step 4: Get Calculation Parameters
     calculation_dataframe = query_dataframe.merge(input_dataframe[['part_number', 'customer_part_number']], on='part_number', how='left')
-    calculation_dataframe = calculate_month_diff_dataframe(calculation_dataframe)
+    calculation_dataframe = calculate_month_diff_dataframe(calculation_dataframe, threshold_months=24)
+    calculation_dataframe = update_columns_based_on_expired(calculation_dataframe)
     calculation_dataframe = calculate_label_copies_dataframe(calculation_dataframe)
     desired_order = ['part_number', 'product_number', 'customer_part_number', 'lot', 'DC', 'date_code', 'quantity',
                      'small_label_copies', 'small_label_quantity', 'medium_label_copies', 'medium_label_quantity', 'large_label_copies', 'large_label_quantity', 'out_date',]

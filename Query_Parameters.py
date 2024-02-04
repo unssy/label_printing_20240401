@@ -37,24 +37,20 @@ def get_sampling_count(dataframe):
 
 
 def merge_with_reference(dataframe):
-    # 讀取參照表
+    # 读取参照表
     parameters_db = pd.read_csv('parameters_database.csv')
 
-    # 在合併前將 'part_number' 列轉換為小寫
+    # 在合并前将 'part_number' 列转换为小写
     lower_part_number_column = 'lower_part_number'
     try:
-        merged_dataframe = pd.merge(dataframe.rename(columns={'part_number': lower_part_number_column}),
-                                    parameters_db.rename(columns={'part_number': lower_part_number_column}),
-                                    on=lower_part_number_column, how='left', suffixes=('', '_ref'))
+        merged_dataframe = pd.merge(dataframe, parameters_db.rename(columns={'part_number': lower_part_number_column}),
+                                    left_on='part_number', right_on=lower_part_number_column,
+                                    how='left', suffixes=('', '_ref'))
     except KeyError:
-        # 若 'part_number' 列不存在，填充 NaN 並繼續進行合併
-        merged_dataframe = pd.merge(dataframe, parameters_db, left_on='part_number', right_on='part_number', how='left')
+        # 若 'part_number' 列不存在，填充 NaN 并继续进行合并
+        merged_dataframe = pd.merge(dataframe, parameters_db, on='part_number', how='left')
 
-    # 去除多餘的列
-    if lower_part_number_column in merged_dataframe.columns:
-        merged_dataframe.drop(columns=[lower_part_number_column], inplace=True)
-
-    # 填充 NaN 並將 'MPQ' 列轉換為整數
+    # 填充 NaN 并将 'MPQ' 列转换为整数
     merged_dataframe['MPQ'].fillna(0, inplace=True)
     merged_dataframe['MPQ'] = merged_dataframe['MPQ'].astype(int)
 

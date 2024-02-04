@@ -10,6 +10,7 @@ def load_config(file_path):
         config = json.load(file)
     return config
 
+
 def read_excel_data(workbook_path, sheet_name):
     """
     從指定的 Excel 文件和工作表中讀取數據並返回為 DataFrame。
@@ -21,7 +22,13 @@ def read_excel_data(workbook_path, sheet_name):
     返回:
         pd.DataFrame: 從Excel工作表中讀取的數據。
     """
-    return pd.read_excel(workbook_path, sheet_name=sheet_name)
+    # 讀取 Excel 數據到 DataFrame
+    df = pd.read_excel(workbook_path, sheet_name=sheet_name)
+
+    # 對 DataFrame 中的每個元素應用 strip 操作
+    df = df.applymap(lambda x: x.strip() if isinstance(x, str) else x)
+
+    return df
 
 def clear_worksheet(workbook_path, sheet_name):
     # Load the workbook
@@ -102,6 +109,7 @@ def output_data(workbook_path, sheet_name, dataframe):
 
     except PermissionError as e:
         print(f"PermissionError: {e}")
+        print("The file is currently open. Please close it and try again.")
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
