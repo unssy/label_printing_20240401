@@ -51,10 +51,9 @@ if __name__ == "__main__":
     calculation_dataframe = query_dataframe.merge(input_dataframe[['part_number', 'customer_part_number']], on='part_number', how='left')
     calculation_dataframe = calculate_month_diff_dataframe(calculation_dataframe, threshold_months=24)
     calculation_dataframe = update_columns_based_on_expired(calculation_dataframe)
+    calculation_dataframe = custom_standardization(calculation_dataframe)
     calculation_dataframe = calculate_label_copies_dataframe(calculation_dataframe)
-    desired_order = ['part_number', 'product_number', 'customer_part_number', 'lot', 'DC', 'date_code', 'quantity',
-                     'small_label_copies', 'small_label_quantity', 'medium_label_copies', 'medium_label_quantity', 'large_label_copies', 'large_label_quantity', 'out_date',]
-    calculation_dataframe = calculation_dataframe[desired_order]
+
     output_data('parameters_dataframe.xlsx','Calculation_Parameters',calculation_dataframe)
 
     # Step 5: Fill Delivery Record

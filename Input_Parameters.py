@@ -6,6 +6,26 @@ from  utinities import format_date_code
 from openpyxl import load_workbook
 import pandas as pd
 
+def custom_standardization(df, columns=None):
+    # 如果未指定列，使用默认的固定列
+    if columns is None:
+        columns = ['DC', 'quantity']
+
+    try:
+        for column in columns:
+            # 检查指定的列是否存在于数据框中
+            if column not in df.columns:
+                print(f"Warning: Column '{column}' does not exist in the DataFrame.")
+                continue
+
+            # 针对指定列进行标准化
+            df[column] = pd.to_numeric(df[column], errors='coerce')
+            df[column] = df[column].round().astype('Int64')
+
+    except ValueError as e:
+        print(f"Error: {e}")
+
+    return df
 
 def read_stock_data(workbook_path, sheet_name):
     workbook = load_workbook(workbook_path, data_only=True)
