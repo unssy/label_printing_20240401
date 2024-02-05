@@ -5,6 +5,16 @@ import json
 from openpyxl.utils import get_column_letter
 import os
 
+def is_file_locked(file_path):
+    try:
+        # 尝试以写入模式打开文件，如果成功说明文件没有被其他进程占用
+        with open(file_path, 'a'):
+            pass
+        return False
+    except PermissionError:
+        # 如果抛出PermissionError，则文件已经被其他进程打开
+        return True
+
 def load_config(file_path):
     with open(file_path, 'r', encoding='utf-8') as file:
         config = json.load(file)
