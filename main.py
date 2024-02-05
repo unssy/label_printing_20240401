@@ -37,15 +37,20 @@ if __name__ == "__main__":
 
     # Step 2: Query Stock
     query_dataframe = main_query(input_dataframe, stock_dataframe)
-    output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
+    if is_file_locked(parameters_worksheet_path):
+        response = input("The file is currently open. Do you want to continue? (Enter 1 for yes, 2 for no): ").strip()
+        if response != '1':
+            print("Operation canceled.")
+    else:
+        output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
 
     # # Step 3: Deduct Stock
-    # if ask_deduct_stock():
-    #     print("Executing the desired function...")
-    #     deduct_stock(file_path=stock_workbook_path, sheet=stock_workbook_sheet, data_df=query_dataframe, password=stock_password)
-    # else:
-    #     print("Exiting the program...")
-    #     exit()
+    if ask_deduct_stock():
+        print("Executing the desired function...")
+        deduct_stock(file_path=stock_workbook_path, sheet=stock_workbook_sheet, data_df=query_dataframe, password=stock_password)
+    else:
+        print("Exiting the program...")
+        exit()
 
     # Step 4: Get Calculation Parameters
     calculation_dataframe = query_dataframe.merge(input_dataframe[['part_number', 'customer_part_number']], on='part_number', how='left')

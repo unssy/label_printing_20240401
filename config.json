@@ -1,7 +1,7 @@
 {
-    "parameters_worksheet_path": "D:\\桌面\\pycharmproject\\project_autopacking_20230812\\parameters_dataframe.xlsx",
-    "stock_workbook_path": "D:\\桌面\\pycharmproject\\project_autopacking_20230812\\(NEW)2023-2.xlsx",
-"parameters_database": "D:\\桌面\\pycharmproject\\project_autopacking_20230812\\parameters_database.csv",
+    "parameters_worksheet_path": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\parameters_dataframe.xlsx",
+    "stock_workbook_path": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\(NEW)2023-2.xlsx",
+"parameters_database": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\parameters_database.csv",
 "stock_workbook_sheet": "20230105",
 "stock_password" : "369"
 }

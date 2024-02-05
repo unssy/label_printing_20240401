@@ -123,7 +123,7 @@ def output_data(workbook_path, sheet_name, dataframe):
     except Exception as e:
         print(f"An error occurred: {e}")
     finally:
-        print("Ensure that the file is closed.")
+        print(f"Dataframe has been successfully output to sheet '{sheet_name}' in the Excel file.")
 
 def ask_deduct_stock():
     """

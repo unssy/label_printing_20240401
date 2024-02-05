@@ -8,11 +8,6 @@ def fill_delivery_record(input_dataframe, calculation_dataframe):
     merged_dataframe['month'] = pd.to_datetime(merged_dataframe['delivery_date']).dt.month
     merged_dataframe['day'] = pd.to_datetime(merged_dataframe['delivery_date']).dt.day
 
-    parameters_db = pd.read_csv('customer_no.csv')
-    # 根据'customer_no'查找'customer_name'并加入到merged_dataframe
-    merged_dataframe = pd.merge(merged_dataframe, parameters_db[['customer_no', 'customer_name']], on='customer_no',
-                                how='left')
-
     # 选择所需的列并重新排列
     desired_order = ['month', 'day', 'invoice_series', 'customer_no', 'customer_name' , 'part_number', 'lot', 'DC',
                      'quantity', 'customer_part_number', 'product_number', 'new_lot', 'new_DC',

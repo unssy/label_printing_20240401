@@ -1,6 +1,7 @@
 from  utinities import *
 import pandas as pd
 import win32com.client as win32
+from datetime import datetime
 
 def get_sampling_count(dataframe):
 
@@ -38,17 +39,21 @@ def get_sampling_count(dataframe):
 
 def merge_with_reference(dataframe):
     # 读取参照表
-    parameters_db = pd.read_csv('parameters_database.csv')
+    parameters_db_1 = pd.read_csv('parameters_database.csv')
+    parameters_db_2 = pd.read_csv('customer_no.csv')
+    # 根据'customer_no'查找'customer_name'并加入到merged_dataframe
+    merged_dataframe = pd.merge(dataframe, parameters_db_2[['customer_no', 'customer_name']], on='customer_no',
+                                how='left')
 
     # 在合并前将 'part_number' 列转换为小写
     lower_part_number_column = 'lower_part_number'
     try:
-        merged_dataframe = pd.merge(dataframe, parameters_db.rename(columns={'part_number': lower_part_number_column}),
+        merged_dataframe = pd.merge(merged_dataframe, parameters_db_1.rename(columns={'part_number': lower_part_number_column}),
                                     left_on='part_number', right_on=lower_part_number_column,
                                     how='left', suffixes=('', '_ref'))
     except KeyError:
         # 若 'part_number' 列不存在，填充 NaN 并继续进行合并
-        merged_dataframe = pd.merge(dataframe, parameters_db, on='part_number', how='left')
+        merged_dataframe = pd.merge(dataframe, parameters_db_1, on='part_number', how='left')
 
     # 填充 NaN 并将 'MPQ' 列转换为整数
     merged_dataframe['MPQ'].fillna(0, inplace=True)
@@ -111,7 +116,7 @@ def main_query(input_dataframe, stock_dataframe):
     recommend_df['customer_no'] = input_dataframe['customer_no'].iloc[0]
     recommend_df = get_sampling_count(recommend_df)
     recommend_df = merge_with_reference(recommend_df)
-    desired_order = ['part_number', 'product_number','lot', 'DC', 'date_code', 'quantity',
+    desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number','lot', 'DC', 'date_code', 'quantity',
                      'store', 'row_index', 'remark', 'sampling', 'marking_code', 'package','MPQ','delivery_date','customer_no']
     recommend_df = recommend_df[desired_order]
     return recommend_df
@@ -119,8 +124,10 @@ def main_query(input_dataframe, stock_dataframe):
 
 def convert_to_mm_dd(date_str):
     """Convert date string from yyyymmdd to mm/dd format."""
-    month = date_str[4:6]
-    day = date_str[6:8]
+    date_obj = datetime.strptime(date_str, "%Y/%m/%d")
+    # 提取月份和日期，省略前导零
+    month = str(int(date_obj.strftime("%m")))
+    day = str(int(date_obj.strftime("%d")))
     return f"{month}/{day}"
 
 
@@ -135,10 +142,11 @@ def find_insert_column(ws, target_date):
 
 def open_excel_workbook(file_path, password):
     """Open an Excel workbook with given write password."""
-    win32.gencache.EnsureModule('{00020813-0000-0000-C000-000000000046}', 0, 1, 9)
+
     excel = win32.gencache.EnsureDispatch('Excel.Application')
     excel.Visible = True
     try:
+        # win32.gencache.EnsureModule('{00020813-0000-0000-C000-000000000046}', 0, 1, 9)
         wb = excel.Workbooks.Open(
             file_path,
             UpdateLinks=0,
@@ -163,12 +171,11 @@ def autofill_formula(ws, source_col, row, target_col):
 
 def deduct_stock(file_path, sheet, data_df, password):
     """Deduct stock based on provided dataframe."""
-    excel = None
-    wb = None  # Initialize wb to None before the try block
+    # excel = None
+    # wb = None  # Initialize wb to None before the try block
     try:
         excel, wb = open_excel_workbook(file_path, password)
         ws = wb.Worksheets[sheet]
-
         delivery_date = convert_to_mm_dd(str(data_df['delivery_date'].iloc[0]))
         col_to_insert = find_insert_column(ws, delivery_date)
         if col_to_insert is None:
@@ -177,7 +184,7 @@ def deduct_stock(file_path, sheet, data_df, password):
 
         ws.Columns(col_to_insert).Insert()
         ws.Cells(1, col_to_insert).Value = delivery_date
-        ws.Cells(2, col_to_insert).Value = data_df['customer_no'].iloc[0]
+        ws.Cells(2, col_to_insert).Value = data_df['customer_name'].iloc[0]
         for _, row in data_df.iterrows():
             ws.Cells(row['row_index'], col_to_insert).Value = row['quantity']
 
