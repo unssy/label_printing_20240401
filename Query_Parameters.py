@@ -114,6 +114,7 @@ def main_query(input_dataframe, stock_dataframe):
     input_dataframe['delivery_date'] = input_dataframe['delivery_date'].map(format_date_code)
     recommend_df['delivery_date'] = input_dataframe['delivery_date'].iloc[0]
     recommend_df['customer_no'] = input_dataframe['customer_no'].iloc[0]
+    recommend_df['deduct'] = False
     recommend_df = get_sampling_count(recommend_df)
     recommend_df = merge_with_reference(recommend_df)
     desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number','lot', 'DC', 'date_code', 'quantity',
@@ -125,9 +126,9 @@ def main_query(input_dataframe, stock_dataframe):
 def convert_to_mm_dd(date_str):
     """Convert date string from yyyymmdd to mm/dd format."""
     date_obj = datetime.strptime(date_str, "%Y/%m/%d")
-    # 提取月份和日期，省略前导零
-    month = str(int(date_obj.strftime("%m")))
-    day = str(int(date_obj.strftime("%d")))
+    # 直接获取月份和日期，不包括前导零
+    month = str(date_obj.month)
+    day = str(date_obj.day)
     return f"{month}/{day}"
 
 
