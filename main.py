@@ -43,7 +43,7 @@ if __name__ == "__main__":
             print("Operation canceled.")
     else:
         output_data(workbook_path=parameters_worksheet_path,sheet_name='Query_Parameters',dataframe=query_dataframe)
-
+        query_dataframe['deduct'] = True
     # # Step 3: Deduct Stock
     if ask_deduct_stock():
         print("Executing the desired function...")
