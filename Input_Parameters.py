@@ -1,8 +1,4 @@
-import pandas as pd
-from openpyxl import load_workbook
-import os
-from  utinities import format_date_code
-
+from  utinities import *
 from openpyxl import load_workbook
 import pandas as pd
 
@@ -53,6 +49,21 @@ def read_stock_data(workbook_path, sheet_name):
     df['row_index'] = row_indices
 
     return df
+
+
+def preprocess_input_dataframe(input_dataframe):
+    # 对 input_dataframe 进行加工和分组
+    agg_dict = {
+        'quantity': 'sum',
+        'unit_price': 'first',
+        'currency': 'first',
+        'invoice_series': 'first',
+        'delivery_date': 'first',
+        'customer_no': 'first'
+    }
+    processed_dataframe = input_dataframe.groupby(['part_number', 'product_number', 'customer_part_number', 'purchase_order'], as_index=False).agg(agg_dict)
+    processed_dataframe['delivery_date'] = processed_dataframe['delivery_date'].map(format_date_code)
+    return processed_dataframe
 
 
 

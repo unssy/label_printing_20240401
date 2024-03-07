@@ -169,10 +169,13 @@ def calculate_label_copies_dataframe(df):
 
     # 套用主函數到 DataFrame
     df = df.apply(process_row, axis=1)
-    desired_order = ['part_number', 'product_number', 'customer_part_number', 'lot', 'DC', 'date_code', 'quantity',
-                     'marking_code',
-                     'MPQ', 'package', 'new_lot', 'new_DC', 'new_date_code', 'new_quantity',
-                     'small_label_copies', 'small_label_quantity', 'medium_label_copies', 'medium_label_quantity',
-                     'large_label_copies', 'large_label_quantity', 'out_date', 'expired']
+    desired_order = ['delivery_date', 'invoice_series', 'purchase_order', 'customer_no', 'customer_name',
+                    'lot', 'part_number', 'DC', 'date_code', 'quantity', 'customer_part_number', 'product_number',
+                    'new_lot', 'new_DC', 'new_date_code', 'new_quantity', 'marking_code', 'package', 'unit_price',
+                    'currency', 'small_label_quantity', 'small_label_copies', 'medium_label_quantity',
+                    'medium_label_copies',
+                    'large_label_quantity', 'large_label_copies',
+                    'out_date', 'expired', 'store', 'row_index', 'remark', 'sampling', 'MPQ', 'deduct'
+                    ]
 
     return df[desired_order]

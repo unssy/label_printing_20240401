@@ -61,64 +61,83 @@ def merge_with_reference(dataframe):
 
     return merged_dataframe
 
-def process_stock_by_max_and_earliest(part_stock, target_quantity):
+def process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order, stock_dataframe):
     part_stock = part_stock.copy()
     part_stock['date_code'] = part_stock['date_code'].apply(format_date_code)
-    part_stock_sorted = part_stock.sort_values(by=['date_code'], ascending=True, na_position='last')
-    result_list = []
+    part_stock_sorted = part_stock.sort_values(by=['date_code', 'row_index'], ascending=[True, True], na_position='last')
+    result_rows = []
     accumulated_quantity = 0
+    found_enough_stock = False  # 标志是否找到足够的库存
 
-    for date_code, group in part_stock_sorted.groupby('date_code'):
-        exact_match = group[group['quantity'] == target_quantity]
-        if not exact_match.empty:
-            result_list.append(exact_match.iloc[0].to_dict())
+    # 额外的检查，看是否有完全匹配的库存
+    exact_match = part_stock_sorted[part_stock_sorted['quantity'] == target_quantity]
+    if not exact_match.empty:
+        for index, row in exact_match.iterrows():
+            row['purchase_order'] = str(target_purchase_order)
+            result_rows.append(row)
             accumulated_quantity += target_quantity
+            found_enough_stock = True  # 找到足够的库存
+            stock_dataframe.loc[stock_dataframe['row_index'] == row['row_index'], 'quantity'] -= row['quantity']
+        return result_rows
+    # 没有完全匹配的情况下，继续循环查找部分匹配
+    for index, row in part_stock_sorted.iterrows():
+        remaining_quantity = target_quantity - accumulated_quantity
+
+        if row['quantity'] >= remaining_quantity:
+            result_row = row.copy()
+            result_row['quantity'] = remaining_quantity
+            result_row['purchase_order'] = str(target_purchase_order)
+            result_rows.append(result_row)
+            accumulated_quantity += remaining_quantity
+            found_enough_stock = True  # 找到足够的库存
             break
 
-        # 找到與 target_quantity 最接近的 row
-        closest_lot = group.iloc[(group['quantity'] - target_quantity).abs().argsort()[:1]]
-        take_quantity = min(closest_lot['quantity'].values[0], target_quantity - accumulated_quantity)
-        formatted_date = format_date_code(date_code)
-        result_row = {
-            'part_number': str(closest_lot['part_number'].values[0]),
-            'lot': str(closest_lot['lot'].values[0]),
-            'DC': str(closest_lot['DC'].values[0]),
-            'date_code': formatted_date,
-            'quantity': str(take_quantity),
-            'store': str(closest_lot['store'].values[0]),
-            'row_index': str(closest_lot['row_index'].values[0])
+        row['purchase_order'] = str(target_purchase_order)
+        result_rows.append(row)
+        accumulated_quantity += row['quantity']
+        stock_dataframe.loc[stock_dataframe['row_index'] == row['row_index'], 'quantity'] -= row['quantity']
+
+    if not found_enough_stock:
+        # 在这里添加缺少库存的备注信息
+        remark_row = {
+            'part_number': str(row['part_number']),
+            'lot': 'N/A',
+            'DC': 'N/A',
+            'date_code': 'N/A',
+            'quantity': 0,
+            'store': 'N/A',
+            'row_index': 'N/A',
+            'purchase_order': str(target_purchase_order),
+            'remark': '缺少库存' + str(target_quantity - accumulated_quantity)
         }
-        result_list.append(result_row)
-        accumulated_quantity += take_quantity
-        if accumulated_quantity >= target_quantity:
-            break
-    return result_list
+        result_rows.append(remark_row)
+
+    return result_rows
 
 
-def main_query(input_dataframe, stock_dataframe):
+def main_query(preprocess_input_dataframe, stock_dataframe):
     all_results = []
-    for row in input_dataframe.itertuples(index=False):
+    for row in preprocess_input_dataframe.itertuples(index=False):
         target_part_number = row.part_number
         target_quantity = row.quantity
+        target_purchase_order = row.purchase_order
 
         part_stock = stock_dataframe[
             (stock_dataframe['part_number'].str.upper() == target_part_number.upper()) &
             (stock_dataframe['quantity'] != 0)]
         # 使用最大和最早 lot 的組合處理
-        result_list = process_stock_by_max_and_earliest(part_stock, target_quantity)
+        result_list = process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order, stock_dataframe)
         all_results.extend(result_list)
 
     recommend_df = pd.DataFrame(all_results)
-    # 使用 'part_number' 列合併 recommend_df 和 input_dataframe 中的 'product_number' 列
-    recommend_df = recommend_df.merge(input_dataframe[['part_number', 'product_number']], on='part_number', how='left')
-    input_dataframe['delivery_date'] = input_dataframe['delivery_date'].map(format_date_code)
-    recommend_df['delivery_date'] = input_dataframe['delivery_date'].iloc[0]
-    recommend_df['customer_no'] = input_dataframe['customer_no'].iloc[0]
+    recommend_df = recommend_df.merge(preprocess_input_dataframe, on=['part_number', 'purchase_order'], how='left', suffixes=('', '_x'))
     recommend_df['deduct'] = False
     recommend_df = get_sampling_count(recommend_df)
     recommend_df = merge_with_reference(recommend_df)
-    desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number','lot', 'DC', 'date_code', 'quantity',
-                     'store', 'row_index', 'remark', 'sampling', 'marking_code', 'package','MPQ','delivery_date','customer_no']
+    desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number', 'customer_part_number',
+                     'lot', 'DC', 'date_code', 'quantity', 'purchase_order', 'unit_price',
+                     'store', 'row_index', 'remark', 'sampling', 'marking_code', 'package', 'MPQ', 'delivery_date',
+                     'invoice_series', 'currency', 'deduct']
     recommend_df = recommend_df[desired_order]
     return recommend_df
 
