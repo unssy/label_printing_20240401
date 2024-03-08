@@ -3,6 +3,7 @@ from Query_Parameters import *
 from utilities import *
 from Calculation_Parameters import *
 
+
 def get_workbook_path(filename):
     """
     Returns the absolute path of the file in the current script directory.
@@ -16,23 +17,29 @@ def get_workbook_path(filename):
     workbook_path = os.path.join(current_directory, filename)
     return workbook_path
 
+
 def slice_dataframe(main_dataframe, dataframe_name):
     parameters_mapping = {
-        'delivery_record_dataframe': ['month', 'day', 'invoice_series', 'purchase_order', 'customer_no', 'customer_name',
+        'delivery_record_dataframe': ['month', 'day', 'invoice_series', 'purchase_order', 'customer_no',
+                                      'customer_name',
                                       'lot', 'part_number', 'DC', 'date_code', 'quantity'],
         'label_parameters_dataframe': ['delivery_date', 'invoice_series', 'customer_no', 'customer_name', 'part_number',
-                                       'lot', 'DC', 'quantity', 'customer_part_number', 'product_number', 'new_lot', 'new_DC',
+                                       'lot', 'DC', 'quantity', 'customer_part_number', 'product_number', 'new_lot',
+                                       'new_DC',
                                        'new_quantity', 'marking_code', 'small_label_quantity', 'small_label_copies',
-                                       'medium_label_quantity','medium_label_copies', 'large_label_quantity', 'large_label_copies',],
+                                       'medium_label_quantity', 'medium_label_copies', 'large_label_quantity',
+                                       'large_label_copies', ],
         'oqc_report_dataframe': ['purchase_order', 'product_number', 'customer_part_number', 'new_lot', 'new_quantity',
                                  'marking_code', 'sampling', 'DC'],
         'query_dataframe': ['delivery_date', 'invoice_series', 'customer_name', 'part_number', 'lot', 'DC', 'quantity',
-                            'customer_part_number', 'marking_code', 'package', 'MPQ', 'store', 'out_date', 'expired', 'row_index']
+                            'customer_part_number', 'marking_code', 'package', 'MPQ', 'store', 'out_date', 'expired',
+                            'row_index']
     }
 
     parameters = parameters_mapping.get(dataframe_name, [])
     sliced_dataframe = main_dataframe[parameters]
     return sliced_dataframe
+
 
 def initialize_and_generate_forms(config_path):
     column_order = ['delivery_date', 'invoice_series', 'purchase_order', 'customer_no', 'customer_name',
@@ -82,6 +89,7 @@ def initialize_and_generate_forms(config_path):
         output_data('parameters_dataframe.xlsx', 'query_dataframe', query_dataframe)
     return main_dataframe
 
+
 def preprocess_calculation_dataframe(query_dataframe):
     df = query_dataframe.copy()
     df = calculate_month_diff(df, threshold_months=24)
@@ -90,9 +98,11 @@ def preprocess_calculation_dataframe(query_dataframe):
     df = calculate_label_copies(df)
     return df
 
+
 def manually_update_forms():
     # This is where the functionality to manually update forms should be implemented
     pass
+
 
 def main():
     main_dataframe = None
@@ -134,6 +144,7 @@ def main():
             break
         else:
             print("Invalid operation number, please try again.")
+
 
 if __name__ == "__main__":
     main_dataframe = None
