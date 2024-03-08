@@ -1,15 +1,15 @@
-
 from Input_Parameters import *
 from Query_Parameters import *
-from utinities import *
+from utilities import *
 from Calculation_Parameters import *
+
 def get_workbook_path(filename):
     """
-    根据给定的文件名返回在当前脚本所在目录的绝对路径。
-    参数:
-        filename (str): 要查找的文件名。
-    返回:
-        str: 文件的绝对路径。
+    Returns the absolute path of the file in the current script directory.
+    Args:
+        filename (str): The name of the file to find.
+    Returns:
+        str: The absolute path of the file.
     """
     current_file_path = os.path.abspath(__file__)
     current_directory = os.path.dirname(current_file_path)
@@ -33,8 +33,6 @@ def slice_dataframe(main_dataframe, dataframe_name):
     parameters = parameters_mapping.get(dataframe_name, [])
     sliced_dataframe = main_dataframe[parameters]
     return sliced_dataframe
-
-
 
 def initialize_and_generate_forms(config_path):
     column_order = ['delivery_date', 'invoice_series', 'purchase_order', 'customer_no', 'customer_name',
@@ -64,8 +62,6 @@ def initialize_and_generate_forms(config_path):
     oqc_report_dataframe = slice_dataframe(main_dataframe, 'oqc_report_dataframe')
     query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
 
-
-
     if is_file_locked(parameters_worksheet_path):
         response = input("The file is currently open. Do you want to continue? (Enter 1 for yes, 2 for no): ").strip()
         if response == '1':
@@ -84,6 +80,7 @@ def initialize_and_generate_forms(config_path):
         output_data('parameters_dataframe.xlsx', 'label_parameters', label_parameters_dataframe)
         output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
         output_data('parameters_dataframe.xlsx', 'query_dataframe', query_dataframe)
+    return main_dataframe
 
 def preprocess_calculation_dataframe(query_dataframe):
     df = query_dataframe.copy()
@@ -94,37 +91,28 @@ def preprocess_calculation_dataframe(query_dataframe):
     return df
 
 def manually_update_forms():
-    # 这里需要实现人工修正表单的功能
+    # This is where the functionality to manually update forms should be implemented
     pass
 
-def deduct_stock(stock_workbook_path, stock_workbook_sheet, stock_password, query_dataframe, parameters_worksheet_path):
-    if ask_deduct_stock():
-        print("Executing the desired function...")
-        main_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='main_dataframe')
-        deduct_stock(file_path=stock_workbook_path, sheet=stock_workbook_sheet, data_df=query_dataframe, password=stock_password)
-        main_dataframe['deduct'] = True
-    else:
-        print("Exiting the program...")
-        exit()
-
 def main():
+    main_dataframe = None
     while True:
-        print("請選擇操作:")
-        print("1. 初始化和生成表單")
-        print("2. 人工修正讀取表單")
-        print("3. 扣帳")
-        print("4. 退出")
+        print("Please select an operation:")
+        print("1. Initialize and generate forms")
+        print("2. Manually update read forms")
+        print("3. Deduct")
+        print("4. Exit")
 
-        choice = input("輸入操作編號: ")
-        main_dataframe = None
+        choice = input("Enter the operation number: ")
 
         if choice == "1":
-            initialize_and_generate_forms('config.json')
+            print('initialize_and_generate_forms')
+            main_dataframe = initialize_and_generate_forms('config.json')
         elif choice == "2":
             manually_update_forms()
         elif choice == "3":
             if main_dataframe is None:
-                print("请先进行初始化和生成表单操作（选择 1）.")
+                print("Please perform the initialize and generate forms operation first (select 1).")
             else:
                 config = load_config(get_workbook_path('config.json'))
                 stock_workbook_path = config.get('stock_workbook_path', '')
@@ -132,11 +120,21 @@ def main():
                 stock_password = config.get('stock_password', '')
                 query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
                 parameters_worksheet_path = config.get('parameters_worksheet_path', '')
-                deduct_stock(stock_workbook_path, stock_workbook_sheet, stock_password, query_dataframe, parameters_worksheet_path)
+                if ask_deduct_stock():
+                    print("Executing the desired function...")
+                    main_dataframe = read_excel_data(workbook_path=parameters_worksheet_path,
+                                                     sheet_name='main_dataframe')
+                    deduct_stock(file_path=stock_workbook_path, sheet=stock_workbook_sheet, data_df=query_dataframe,
+                                 password=stock_password)
+                    main_dataframe['deduct'] = True
+                else:
+                    print("Exiting the program...")
+                    exit()
         elif choice == "4":
             break
         else:
-            print("無效的操作編號，請重試。")
+            print("Invalid operation number, please try again.")
 
 if __name__ == "__main__":
+    main_dataframe = None
     main()

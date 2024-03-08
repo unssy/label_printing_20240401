@@ -1,4 +1,4 @@
-from  utinities import *
+from  utilities import *
 from openpyxl import load_workbook
 import pandas as pd
 
