@@ -51,7 +51,7 @@ def read_stock_data(workbook_path, sheet_name):
     return df
 
 
-def preprocess_input_dataframe(input_dataframe):
+def new_preprocess_input_data(input_dataframe):
     # 对 input_dataframe 进行加工和分组
     agg_dict = {
         'quantity': 'sum',

@@ -3,7 +3,7 @@ from datetime import datetime
 
 
 # 定義一個函數來計算日期差距
-def calculate_month_diff_dataframe(df: pd.DataFrame, date_column: str = 'date_code',
+def calculate_month_diff(df: pd.DataFrame, date_column: str = 'date_code',
                                    threshold_months: int = 24) -> pd.DataFrame:
     """
     計算 dataframe 中指定日期欄位與當前日期的月份差距，並將結果存儲在新的 'out_date' 欄位中。
@@ -57,7 +57,7 @@ def update_columns_based_on_expired(df: pd.DataFrame):
     return df
 
 
-def calculate_label_copies_dataframe(df):
+def calculate_label_copies(df):
     mpq_categories = {
         '7_inch_reel': [250, 500, 800, 2000, 2500, 3000, 4000, 5000, 8000, 10000, 12000],
         '7_inch_thick_reel': [1000, 1800],
