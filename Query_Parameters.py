@@ -137,7 +137,7 @@ def main_query(preprocess_input_dataframe, stock_dataframe):
     desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number', 'customer_part_number',
                      'lot', 'DC', 'date_code', 'quantity', 'purchase_order', 'unit_price',
                      'store', 'row_index', 'remark', 'sampling', 'marking_code', 'package', 'MPQ', 'delivery_date',
-                     'invoice_series', 'currency', 'deduct']
+                     'invoice_series', 'currency', 'deduct', 'month', 'day']
     recommend_df = recommend_df[desired_order]
     return recommend_df
 

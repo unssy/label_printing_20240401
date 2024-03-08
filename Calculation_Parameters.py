@@ -175,7 +175,7 @@ def calculate_label_copies_dataframe(df):
                     'currency', 'small_label_quantity', 'small_label_copies', 'medium_label_quantity',
                     'medium_label_copies',
                     'large_label_quantity', 'large_label_copies',
-                    'out_date', 'expired', 'store', 'row_index', 'remark', 'sampling', 'MPQ', 'deduct'
-                    ]
+                    'out_date', 'expired', 'store', 'row_index', 'remark', 'sampling', 'MPQ', 'deduct',
+                    'month', 'day']
 
     return df[desired_order]

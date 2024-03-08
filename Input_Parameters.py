@@ -63,6 +63,8 @@ def preprocess_input_dataframe(input_dataframe):
     }
     processed_dataframe = input_dataframe.groupby(['part_number', 'product_number', 'customer_part_number', 'purchase_order'], as_index=False).agg(agg_dict)
     processed_dataframe['delivery_date'] = processed_dataframe['delivery_date'].map(format_date_code)
+    processed_dataframe['month'] = processed_dataframe['delivery_date'].apply(lambda x: x.split('/')[1])
+    processed_dataframe['day'] = processed_dataframe['delivery_date'].apply(lambda x: x.split('/')[2])
     return processed_dataframe
 
 
