@@ -99,12 +99,39 @@ def preprocess_calculation_dataframe(query_dataframe):
     return df
 
 
-def manually_update_forms():
-    # This is where the functionality to manually update forms should be implemented
-    pass
+def manually_update_forms(workbook_path: str, sheet_name: str) -> pd.DataFrame:
+    """
+    Reads a DataFrame from the specified Excel file and sheet,
+    and potentially performs manual updates on it.
+
+    Args:
+        workbook_path (str): Path to the Excel workbook.
+        sheet_name (str): Name of the sheet to read.
+
+    Returns:
+        pd.DataFrame: The read DataFrame, potentially modified with manual updates.
+
+    Raises:
+        ValueError: If the file path or sheet name is invalid.
+        FileNotFoundError: If the specified file cannot be found.
+        pd.errors.ParserError: If there's an error parsing the Excel file.
+    """
+
+    if not os.path.exists(workbook_path):
+        raise FileNotFoundError(f"File not found: {workbook_path}")
+
+    try:
+        main_dataframe = read_excel_data(workbook_path=workbook_path, sheet_name=sheet_name)
+
+        # Perform any manual updates on main_dataframe here, if needed.
+
+        return main_dataframe
+    except (pd.errors.ParserError, ValueError) as e:
+        raise ValueError(f"Error reading Excel file: {e}") from e
 
 
 def main():
+    global parameters_worksheet_path
     main_dataframe = None
     while True:
         print("Please select an operation:")
@@ -119,7 +146,7 @@ def main():
             print('initialize_and_generate_forms')
             main_dataframe = initialize_and_generate_forms('config.json')
         elif choice == "2":
-            manually_update_forms()
+            manually_update_forms(parameters_worksheet_path,'main_dataframe')
         elif choice == "3":
             if main_dataframe is None:
                 print("Please perform the initialize and generate forms operation first (select 1).")
