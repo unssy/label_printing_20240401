@@ -41,7 +41,27 @@ def slice_dataframe(main_dataframe, dataframe_name):
     return sliced_dataframe
 
 
+def save_to_database(dataframe, excel_file_path, sheet_name='工作表1'):
+    try:
+        # 读取现有的 Excel 文件，如果不存在则创建一个新的 DataFrame
+        existing_data = pd.read_excel(excel_file_path, sheet_name=sheet_name) if pd.ExcelFile(excel_file_path).sheet_names else pd.DataFrame()
+
+        # 将新的 dataframe 添加到现有数据库，确保新的行索引从零开始
+        updated_data = pd.concat([existing_data, dataframe], ignore_index=True)
+
+        # 存入 Excel 文件
+        updated_data.to_excel(excel_file_path, index=False, sheet_name=sheet_name)
+
+        print(f"数据成功保存到 {excel_file_path} 的 {sheet_name} 工作表。")
+
+    except Exception as e:
+        print(f"发生错误：{str(e)}")
+
+
+
 def initialize_and_generate_forms(config_path):
+    global main_dataframe
+    global query_dataframe
     column_order = ['delivery_date', 'invoice_series', 'purchase_order', 'customer_no', 'customer_name',
                     'lot', 'part_number', 'DC', 'date_code', 'quantity', 'customer_part_number', 'product_number',
                     'new_lot', 'new_DC', 'new_date_code', 'new_quantity', 'marking_code', 'package', 'unit_price',
@@ -51,12 +71,15 @@ def initialize_and_generate_forms(config_path):
                     'out_date', 'expired', 'store', 'row_index', 'remark', 'sampling', 'MPQ', 'deduct',
                     'month', 'day']
     main_dataframe = pd.DataFrame(columns=column_order)
+
     config = load_config(get_workbook_path(config_path))
     parameters_worksheet_path = config.get('parameters_worksheet_path', '')
     stock_workbook_path = config.get('stock_workbook_path', '')
     stock_workbook_sheet = config.get('stock_workbook_sheet', '')
+    main_dataframe_database_path =config.get('main_dataframe_database_path', '')
     stock_password = config.get('stock_password', '')
     parameters_database = config.get('parameters_database.csv', '')
+
     input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     preprocess_input_dataframe = new_preprocess_input_data(input_dataframe)
     stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name=stock_workbook_sheet)
@@ -87,7 +110,7 @@ def initialize_and_generate_forms(config_path):
         output_data('parameters_dataframe.xlsx', 'label_parameters', label_parameters_dataframe)
         output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
         output_data('parameters_dataframe.xlsx', 'query_dataframe', query_dataframe)
-    return main_dataframe
+    save_to_database(main_dataframe, excel_file_path=main_dataframe_database_path, sheet_name='工作表1')
 
 
 def preprocess_calculation_dataframe(query_dataframe):
@@ -99,40 +122,8 @@ def preprocess_calculation_dataframe(query_dataframe):
     return df
 
 
-def manually_update_forms(workbook_path: str, sheet_name: str) -> pd.DataFrame:
-    """
-    Reads a DataFrame from the specified Excel file and sheet,
-    and potentially performs manual updates on it.
-
-    Args:
-        workbook_path (str): Path to the Excel workbook.
-        sheet_name (str): Name of the sheet to read.
-
-    Returns:
-        pd.DataFrame: The read DataFrame, potentially modified with manual updates.
-
-    Raises:
-        ValueError: If the file path or sheet name is invalid.
-        FileNotFoundError: If the specified file cannot be found.
-        pd.errors.ParserError: If there's an error parsing the Excel file.
-    """
-
-    if not os.path.exists(workbook_path):
-        raise FileNotFoundError(f"File not found: {workbook_path}")
-
-    try:
-        main_dataframe = read_excel_data(workbook_path=workbook_path, sheet_name=sheet_name)
-
-        # Perform any manual updates on main_dataframe here, if needed.
-
-        return main_dataframe
-    except (pd.errors.ParserError, ValueError) as e:
-        raise ValueError(f"Error reading Excel file: {e}") from e
-
-
 def main():
-    global parameters_worksheet_path
-    main_dataframe = None
+
     while True:
         print("Please select an operation:")
         print("1. Initialize and generate forms")
@@ -146,12 +137,17 @@ def main():
             print('initialize_and_generate_forms')
             main_dataframe = initialize_and_generate_forms('config.json')
         elif choice == "2":
-            manually_update_forms(parameters_worksheet_path,'main_dataframe')
+            main_dataframe = read_excel_data(workbook_path=config.get('parameters_worksheet_path', ''), sheet_name='main_dataframe')
+            print_query_dataframe = input(
+                "Do you want to print the query_dataframe before updating forms? Enter 1 for yes: ")
+            if print_query_dataframe == 1:
+                global query_dataframe
+                print(query_dataframe.head(5))  # Display the first five rows of query_dataframe
+
         elif choice == "3":
             if main_dataframe is None:
                 print("Please perform the initialize and generate forms operation first (select 1).")
             else:
-                config = load_config(get_workbook_path('config.json'))
                 stock_workbook_path = config.get('stock_workbook_path', '')
                 stock_workbook_sheet = config.get('stock_workbook_sheet', '')
                 stock_password = config.get('stock_password', '')
@@ -174,5 +170,9 @@ def main():
 
 
 if __name__ == "__main__":
+    global query_dataframe, main_dataframe, config
+    query_dataframe = None
     main_dataframe = None
+    config = load_config(get_workbook_path('config.json'))
+    invoice_series = input("Enter the invoice_series: ")
     main()
