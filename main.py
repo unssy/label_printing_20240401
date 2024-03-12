@@ -88,8 +88,6 @@ def initialize_and_generate_forms(config, main_dataframe):
     oqc_report_dataframe = slice_dataframe(main_dataframe, 'oqc_report_dataframe')
     query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
 
-
-
     if is_file_locked(parameters_worksheet_path):
         response = input("The file is currently open. Do you want to continue? (Enter 1 for yes, 2 for no): ").strip()
         if response == '1':
@@ -123,7 +121,7 @@ def preprocess_calculation_dataframe(query_dataframe):
 def main():
     main_dataframe = None
     config = load_config(get_workbook_path('config.json'))
-    invoice_series = input("Enter the invoice_series: ")
+    # invoice_series = input("Enter the invoice_series: ")
     while True:
         print("------------------Please select an operation:--------------------")
         print("1. Initialize and generate forms")
@@ -139,12 +137,24 @@ def main():
             print('main_dataframe has been renewed')
 
         elif choice == "2":
-            main_dataframe = read_excel_data(workbook_path=config.get('parameters_worksheet_path', ''), sheet_name='main_dataframe')
+            parameters_worksheet_path = config.get('parameters_worksheet_path', '')
+            main_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='main_dataframe')
             print('main_dataframe has been renewed')
-            query_dataframe=slice_dataframe(main_dataframe, 'query_dataframe')
-            print_query_dataframe = input("Do you want to print the query_dataframe before updating forms? Enter 1 for yes: ")
+            query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
+            print_query_dataframe = input("Do you want to print the query_dataframe ? Enter 1 for yes: ")
+            print(tabulate(query_dataframe.head(10), headers='keys', tablefmt='grid', showindex=False))
             if print_query_dataframe == "1":
-                print(tabulate(query_dataframe.head(10), headers='keys', tablefmt='grid', showindex=False))
+                if is_file_locked(parameters_worksheet_path):
+                    response = input(
+                        "The file is currently open. Do you want to continue? (Enter 1 for yes, 2 for no): ").strip()
+                    if response == '1':
+                        print_excel_sheet(workbook_path=parameters_worksheet_path, sheet_name='query_dataframe')
+                    elif response == '2':
+                        print("Operation canceled.")
+                    else:
+                        print("Invalid input. Operation canceled.")
+                else:
+                    print_excel_sheet(workbook_path=parameters_worksheet_path, sheet_name='query_dataframe')
             else:
                 print('no printing')
 
@@ -155,6 +165,8 @@ def main():
                 stock_workbook_path = config.get('stock_workbook_path', '')
                 stock_workbook_sheet = config.get('stock_workbook_sheet', '')
                 stock_password = config.get('stock_password', '')
+                main_dataframe = read_excel_data(workbook_path=config.get('parameters_worksheet_path', ''),
+                                                 sheet_name='main_dataframe')
                 query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
                 main_dataframe_database_path = config.get('main_dataframe_database_path', '')
                 if ask_deduct_stock():

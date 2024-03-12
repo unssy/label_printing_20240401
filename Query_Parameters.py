@@ -2,7 +2,8 @@ from  utilities import *
 import pandas as pd
 import win32com.client as win32
 from datetime import datetime
-
+import win32api
+import win32print
 def get_sampling_count(dataframe):
 
     shipment_bounds = [2, 9, 16, 26, 51, 91, 151, 281, 501, 1201, 3201, 10001, 35001, 150001, 500001]
@@ -218,3 +219,40 @@ def deduct_stock(file_path, sheet, data_df, password):
             wb.Close(SaveChanges=False)
         if excel is not None:
             excel.Application.Quit()
+
+
+def print_excel_sheet(workbook_path, sheet_name):
+    excel_app = None
+    try:
+        excel_app = win32.Dispatch("Excel.Application")
+        excel_app.Visible = True  # Set to True if you want Excel to be visible during printing
+
+
+        workbook = excel_app.Workbooks.Open(workbook_path)
+        worksheet = workbook.Sheets[sheet_name]
+
+        # Set orientation to landscape
+        worksheet.PageSetup.Orientation = win32.constants.xlLandscape
+
+        # Set to fit to one page wide and one page tall
+        worksheet.PageSetup.Zoom = False
+        worksheet.PageSetup.FitToPagesWide = 1
+
+        # # Set the printer
+        # excel_app.ActivePrinter = r'KONICA MINOLTA 367SeriesPCL'
+        printer_name = "KONICA MINOLTA C287SeriesPCL"
+        ip_address = "192.168.1.248"
+        universal_path = rf"\\{ip_address}\{printer_name}"
+        worksheet.PrintOut()
+
+        workbook.Close(SaveChanges=False)
+        excel_app.Quit()
+
+        print(f"Successfully printed '{sheet_name}' from '{workbook_path}'")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+    finally:
+        if excel_app:
+            workbook.Close(SaveChanges=False)
+            excel_app.Quit()
