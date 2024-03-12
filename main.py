@@ -2,6 +2,7 @@ from Input_Parameters import *
 from Query_Parameters import *
 from utilities import *
 from Calculation_Parameters import *
+from tabulate import tabulate
 
 
 def get_workbook_path(filename):
@@ -31,9 +32,9 @@ def slice_dataframe(main_dataframe, dataframe_name):
                                        'large_label_copies', ],
         'oqc_report_dataframe': ['purchase_order', 'product_number', 'customer_part_number', 'new_lot', 'new_quantity',
                                  'marking_code', 'sampling', 'DC'],
-        'query_dataframe': ['delivery_date', 'invoice_series', 'customer_name', 'part_number', 'lot', 'DC', 'quantity',
-                            'customer_part_number', 'marking_code', 'package', 'MPQ', 'store', 'out_date', 'expired',
-                            'row_index']
+        'query_dataframe': ['invoice_series', 'customer_name', 'part_number', 'lot', 'DC', 'quantity',
+                            'customer_part_number', 'marking_code', 'package', 'MPQ', 'store', 'expired',
+                            ]
     }
 
     parameters = parameters_mapping.get(dataframe_name, [])
@@ -59,9 +60,8 @@ def save_to_database(dataframe, excel_file_path, sheet_name='工作表1'):
 
 
 
-def initialize_and_generate_forms(config_path):
-    global main_dataframe
-    global query_dataframe
+def initialize_and_generate_forms(config, main_dataframe):
+
     column_order = ['delivery_date', 'invoice_series', 'purchase_order', 'customer_no', 'customer_name',
                     'lot', 'part_number', 'DC', 'date_code', 'quantity', 'customer_part_number', 'product_number',
                     'new_lot', 'new_DC', 'new_date_code', 'new_quantity', 'marking_code', 'package', 'unit_price',
@@ -72,13 +72,9 @@ def initialize_and_generate_forms(config_path):
                     'month', 'day']
     main_dataframe = pd.DataFrame(columns=column_order)
 
-    config = load_config(get_workbook_path(config_path))
     parameters_worksheet_path = config.get('parameters_worksheet_path', '')
     stock_workbook_path = config.get('stock_workbook_path', '')
     stock_workbook_sheet = config.get('stock_workbook_sheet', '')
-    main_dataframe_database_path =config.get('main_dataframe_database_path', '')
-    stock_password = config.get('stock_password', '')
-    parameters_database = config.get('parameters_database.csv', '')
 
     input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     preprocess_input_dataframe = new_preprocess_input_data(input_dataframe)
@@ -91,6 +87,8 @@ def initialize_and_generate_forms(config_path):
     label_parameters_dataframe = slice_dataframe(main_dataframe, 'label_parameters_dataframe')
     oqc_report_dataframe = slice_dataframe(main_dataframe, 'oqc_report_dataframe')
     query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
+
+
 
     if is_file_locked(parameters_worksheet_path):
         response = input("The file is currently open. Do you want to continue? (Enter 1 for yes, 2 for no): ").strip()
@@ -110,8 +108,8 @@ def initialize_and_generate_forms(config_path):
         output_data('parameters_dataframe.xlsx', 'label_parameters', label_parameters_dataframe)
         output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
         output_data('parameters_dataframe.xlsx', 'query_dataframe', query_dataframe)
-    save_to_database(main_dataframe, excel_file_path=main_dataframe_database_path, sheet_name='工作表1')
 
+    return main_dataframe
 
 def preprocess_calculation_dataframe(query_dataframe):
     df = query_dataframe.copy()
@@ -123,9 +121,11 @@ def preprocess_calculation_dataframe(query_dataframe):
 
 
 def main():
-
+    main_dataframe = None
+    config = load_config(get_workbook_path('config.json'))
+    invoice_series = input("Enter the invoice_series: ")
     while True:
-        print("Please select an operation:")
+        print("------------------Please select an operation:--------------------")
         print("1. Initialize and generate forms")
         print("2. Manually update read forms")
         print("3. Deduct")
@@ -135,14 +135,18 @@ def main():
 
         if choice == "1":
             print('initialize_and_generate_forms')
-            main_dataframe = initialize_and_generate_forms('config.json')
+            main_dataframe = initialize_and_generate_forms(config, main_dataframe)
+            print('main_dataframe has been renewed')
+
         elif choice == "2":
             main_dataframe = read_excel_data(workbook_path=config.get('parameters_worksheet_path', ''), sheet_name='main_dataframe')
-            print_query_dataframe = input(
-                "Do you want to print the query_dataframe before updating forms? Enter 1 for yes: ")
-            if print_query_dataframe == 1:
-                global query_dataframe
-                print(query_dataframe.head(5))  # Display the first five rows of query_dataframe
+            print('main_dataframe has been renewed')
+            query_dataframe=slice_dataframe(main_dataframe, 'query_dataframe')
+            print_query_dataframe = input("Do you want to print the query_dataframe before updating forms? Enter 1 for yes: ")
+            if print_query_dataframe == "1":
+                print(tabulate(query_dataframe.head(10), headers='keys', tablefmt='grid', showindex=False))
+            else:
+                print('no printing')
 
         elif choice == "3":
             if main_dataframe is None:
@@ -152,14 +156,13 @@ def main():
                 stock_workbook_sheet = config.get('stock_workbook_sheet', '')
                 stock_password = config.get('stock_password', '')
                 query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
-                parameters_worksheet_path = config.get('parameters_worksheet_path', '')
+                main_dataframe_database_path = config.get('main_dataframe_database_path', '')
                 if ask_deduct_stock():
                     print("Executing the desired function...")
-                    main_dataframe = read_excel_data(workbook_path=parameters_worksheet_path,
-                                                     sheet_name='main_dataframe')
                     deduct_stock(file_path=stock_workbook_path, sheet=stock_workbook_sheet, data_df=query_dataframe,
                                  password=stock_password)
                     main_dataframe['deduct'] = True
+                    save_to_database(main_dataframe, excel_file_path=main_dataframe_database_path, sheet_name='工作表1')
                 else:
                     print("Exiting the program...")
                     exit()
@@ -170,9 +173,4 @@ def main():
 
 
 if __name__ == "__main__":
-    global query_dataframe, main_dataframe, config
-    query_dataframe = None
-    main_dataframe = None
-    config = load_config(get_workbook_path('config.json'))
-    invoice_series = input("Enter the invoice_series: ")
     main()
