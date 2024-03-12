@@ -2,8 +2,7 @@ from  utilities import *
 import pandas as pd
 import win32com.client as win32
 from datetime import datetime
-import win32api
-import win32print
+
 def get_sampling_count(dataframe):
 
     shipment_bounds = [2, 9, 16, 26, 51, 91, 151, 281, 501, 1201, 3201, 10001, 35001, 150001, 500001]
@@ -40,8 +39,8 @@ def get_sampling_count(dataframe):
 
 def merge_with_reference(dataframe):
     # 读取参照表
-    parameters_db_1 = pd.read_csv('parameters_database.csv')
-    parameters_db_2 = pd.read_csv('customer_no.csv')
+    parameters_db_1 = parameters_df
+    parameters_db_2 = customer_no_df
     # 根据'customer_no'查找'customer_name'并加入到merged_dataframe
     merged_dataframe = pd.merge(dataframe, parameters_db_2[['customer_no', 'customer_name']], on='customer_no',
                                 how='left')
@@ -116,7 +115,7 @@ def process_stock_by_max_and_earliest(part_stock, target_quantity, target_purcha
     return result_rows
 
 
-def main_query(preprocess_input_dataframe, stock_dataframe):
+def main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_path, customer_no_database_path):
     all_results = []
     for row in preprocess_input_dataframe.itertuples(index=False):
         target_part_number = row.part_number
@@ -131,6 +130,9 @@ def main_query(preprocess_input_dataframe, stock_dataframe):
         all_results.extend(result_list)
 
     recommend_df = pd.DataFrame(all_results)
+    global parameters_df, customer_no_df
+    parameters_df = pd.read_csv(parameters_database_path)
+    customer_no_df = pd.read_csv(customer_no_database_path)
     recommend_df = recommend_df.merge(preprocess_input_dataframe, on=['part_number', 'purchase_order'], how='left', suffixes=('', '_x'))
     recommend_df['deduct'] = False
     recommend_df = get_sampling_count(recommend_df)

@@ -3,6 +3,7 @@
 "main_dataframe_database_path": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\main_dataframe_database.xlsx",
 "stock_workbook_path": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\(NEW)2023-2.xlsx",
 "parameters_database": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\parameters_database.csv",
+"customer_no_database": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\customer_no.csv",
 "stock_workbook_sheet": "20230105",
 "stock_password" : "369"
 }

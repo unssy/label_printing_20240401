@@ -75,11 +75,13 @@ def initialize_and_generate_forms(config, main_dataframe):
     parameters_worksheet_path = config.get('parameters_worksheet_path', '')
     stock_workbook_path = config.get('stock_workbook_path', '')
     stock_workbook_sheet = config.get('stock_workbook_sheet', '')
+    parameters_database_path = config.get('parameters_database', '')
+    customer_no_database_path = config.get('customer_no_database', '')
 
     input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     preprocess_input_dataframe = new_preprocess_input_data(input_dataframe)
     stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name=stock_workbook_sheet)
-    query_dataframe = main_query(preprocess_input_dataframe, stock_dataframe)
+    query_dataframe = main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_path, customer_no_database_path)
     calculation_dataframe = preprocess_calculation_dataframe(query_dataframe)
     main_dataframe[column_order] = calculation_dataframe[column_order]
 
@@ -91,22 +93,23 @@ def initialize_and_generate_forms(config, main_dataframe):
     if is_file_locked(parameters_worksheet_path):
         response = input("The file is currently open. Do you want to continue? (Enter 1 for yes, 2 for no): ").strip()
         if response == '1':
-            output_data('parameters_dataframe.xlsx', 'main_dataframe', main_dataframe)
-            output_data('parameters_dataframe.xlsx', 'delivery_record', delivery_record_dataframe)
-            output_data('parameters_dataframe.xlsx', 'label_parameters', label_parameters_dataframe)
-            output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
-            output_data('parameters_dataframe.xlsx', 'query_dataframe', query_dataframe)
+            output_data(workbook_path=parameters_worksheet_path, sheet_name='main_dataframe', dataframe=main_dataframe)
+            output_data(workbook_path=parameters_worksheet_path, sheet_name='delivery_record', dataframe=delivery_record_dataframe)
+            output_data(workbook_path=parameters_worksheet_path, sheet_name='label_parameters', dataframe=label_parameters_dataframe)
+            output_data(workbook_path=parameters_worksheet_path, sheet_name='OQC_report', dataframe=oqc_report_dataframe)
+            output_data(workbook_path=parameters_worksheet_path, sheet_name='query_dataframe', dataframe=query_dataframe)
         elif response == '2':
             print("Operation canceled.")
         else:
             print("Invalid input. Operation canceled.")
     else:
-        output_data('parameters_dataframe.xlsx', 'main_dataframe', main_dataframe)
-        output_data('parameters_dataframe.xlsx', 'delivery_record', delivery_record_dataframe)
-        output_data('parameters_dataframe.xlsx', 'label_parameters', label_parameters_dataframe)
-        output_data('parameters_dataframe.xlsx', 'OQC_report', oqc_report_dataframe)
-        output_data('parameters_dataframe.xlsx', 'query_dataframe', query_dataframe)
-
+        output_data(workbook_path=parameters_worksheet_path, sheet_name='main_dataframe', dataframe=main_dataframe)
+        output_data(workbook_path=parameters_worksheet_path, sheet_name='delivery_record',
+                    dataframe=delivery_record_dataframe)
+        output_data(workbook_path=parameters_worksheet_path, sheet_name='label_parameters',
+                    dataframe=label_parameters_dataframe)
+        output_data(workbook_path=parameters_worksheet_path, sheet_name='OQC_report', dataframe=oqc_report_dataframe)
+        output_data(workbook_path=parameters_worksheet_path, sheet_name='query_dataframe', dataframe=query_dataframe)
     return main_dataframe
 
 def preprocess_calculation_dataframe(query_dataframe):
