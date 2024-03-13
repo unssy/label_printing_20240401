@@ -226,26 +226,19 @@ def deduct_stock(file_path, sheet, data_df, password):
 def print_excel_sheet(workbook_path, sheet_name):
     excel_app = None
     try:
-        excel_app = win32.Dispatch("Excel.Application")
-        excel_app.Visible = True  # Set to True if you want Excel to be visible during printing
-
+        excel_app = win32.gencache.EnsureDispatch('Excel.Application')
+        excel_app.Visible = False  # Set to True if you want Excel to be visible during printing
 
         workbook = excel_app.Workbooks.Open(workbook_path)
         worksheet = workbook.Sheets[sheet_name]
 
-        # Set orientation to landscape
-        worksheet.PageSetup.Orientation = win32.constants.xlLandscape
-
-        # Set to fit to one page wide and one page tall
-        worksheet.PageSetup.Zoom = False
+        # # Set the printer
+        printer_name = "KONICA MINOLTA 367SeriesPCL on Ne10:"
+        worksheet.PageSetup.Orientation =  2
         worksheet.PageSetup.FitToPagesWide = 1
 
-        # # Set the printer
-        # excel_app.ActivePrinter = r'KONICA MINOLTA 367SeriesPCL'
-        printer_name = "KONICA MINOLTA C287SeriesPCL"
-        ip_address = "192.168.1.248"
-        universal_path = rf"\\{ip_address}\{printer_name}"
-        worksheet.PrintOut()
+
+        worksheet.PrintOut(Copies=1, ActivePrinter= printer_name)
 
         workbook.Close(SaveChanges=False)
         excel_app.Quit()

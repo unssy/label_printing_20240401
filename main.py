@@ -145,7 +145,7 @@ def main():
             print('main_dataframe has been renewed')
             query_dataframe = slice_dataframe(main_dataframe, 'query_dataframe')
             print_query_dataframe = input("Do you want to print the query_dataframe ? Enter 1 for yes: ")
-            print(tabulate(query_dataframe.head(10), headers='keys', tablefmt='grid', showindex=False))
+            print(tabulate(query_dataframe.head(5), headers='keys', tablefmt='grid', showindex=False, colalign=("left",)))
             if print_query_dataframe == "1":
                 if is_file_locked(parameters_worksheet_path):
                     response = input(
