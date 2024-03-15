@@ -31,28 +31,32 @@ def calculate_month_diff(df: pd.DataFrame, date_column: str = 'date_code',
 
 def update_columns_based_on_expired(df: pd.DataFrame):
     """
-    根據 'expired' 欄位的值更新 'lot' 和 'date_code' 欄位。
+    Update the 'lot' and 'date_code' columns based on the values in the 'expired' column.
 
-    參數:
-        df (pd.DataFrame): 輸入的 dataframe。
+    Parameters:
+        df (pd.DataFrame): Input dataframe.
 
-    返回:
-        pd.DataFrame: 更新後的 dataframe。
+    Returns:
+        pd.DataFrame: Updated dataframe.
     """
+    # Define a mapping dictionary to update 'lot' and 'date_code' based on 'expired' values
     mapping_dict = {12: 'A', 24: 'B', 36: 'C', 48: 'D', 60: 'E', 72: 'F', 84: 'G', 96: 'H', 108: 'I'}
+
+    # Create new columns as backup of original columns
     df['new_lot'] = df['lot']
     df['new_DC'] = df['DC']
     df['new_date_code'] = df['date_code']
     df['new_quantity'] = df['quantity']
-    # 根據 'expired' 的條件更新 'lot' 和 'date_code' 使用字典
+
+    # Update 'lot' and 'date_code' based on 'expired' condition and mapping dictionary
     for threshold, label in mapping_dict.items():
-        mask = df['expired'] & (df['out_date'] > threshold)
-        df.loc[mask, 'new_lot'] = df.loc[mask, 'lot'] + label
+        mask = df['expired'] & (df['out_date'] > threshold)  # Create mask to filter data
+        df.loc[mask, 'new_lot'] = df.loc[mask, 'lot'] + label  # Update 'new_lot' column
+        # Update 'new_date_code' column by converting 'date_code' to datetime, adding threshold months, and then formatting as string
         df.loc[mask, 'new_date_code'] = (
                 pd.to_datetime(df.loc[mask, 'date_code']) + pd.DateOffset(months=threshold)).dt.strftime("%Y/%m/%d")
-        df.loc[mask, 'new_DC'] = (pd.to_datetime(df.loc[mask, 'DC'].astype(str).str[:2] + '0101',
-                                                 format='%y%m%d') + pd.DateOffset(
-            years=int(threshold / 12))).dt.strftime("%y") + df.loc[mask, 'DC'].str[-2:]
+        # Update 'new_DC' column by adding threshold years to the year part of 'DC', then converting to string and merging with month and day part of 'DC'
+        df.loc[mask, 'new_DC'] = (df.loc[mask, 'DC'].astype(str).str[:2].astype(int) + int(threshold / 12)).astype(str) + df.loc[mask, 'DC'].astype(str).str[2:4]
 
     return df
 

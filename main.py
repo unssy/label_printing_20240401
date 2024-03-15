@@ -77,12 +77,13 @@ def initialize_and_generate_forms(config, main_dataframe):
     stock_workbook_sheet = config.get('stock_workbook_sheet', '')
     parameters_database_path = config.get('parameters_database', '')
     customer_no_database_path = config.get('customer_no_database', '')
+    threshold_months = config.get('threshold_months', '')
 
     input_dataframe = read_excel_data(workbook_path=parameters_worksheet_path, sheet_name='Input_Parameters')
     preprocess_input_dataframe = new_preprocess_input_data(input_dataframe)
     stock_dataframe = read_stock_data(workbook_path=stock_workbook_path, sheet_name=stock_workbook_sheet)
     query_dataframe = main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_path, customer_no_database_path)
-    calculation_dataframe = preprocess_calculation_dataframe(query_dataframe)
+    calculation_dataframe = preprocess_calculation_dataframe(query_dataframe, threshold_months)
     main_dataframe[column_order] = calculation_dataframe[column_order]
 
     delivery_record_dataframe = slice_dataframe(main_dataframe, 'delivery_record_dataframe')
@@ -112,9 +113,9 @@ def initialize_and_generate_forms(config, main_dataframe):
         output_data(workbook_path=parameters_worksheet_path, sheet_name='query_dataframe', dataframe=query_dataframe)
     return main_dataframe
 
-def preprocess_calculation_dataframe(query_dataframe):
+def preprocess_calculation_dataframe(query_dataframe, threshold_months):
     df = query_dataframe.copy()
-    df = calculate_month_diff(df, threshold_months=24)
+    df = calculate_month_diff(df, threshold_months=int(threshold_months))
     df = update_columns_based_on_expired(df)
     df = custom_standardization(df)
     df = calculate_label_copies(df)

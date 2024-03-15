@@ -1,6 +1,7 @@
 from  utilities import *
 import pandas as pd
 import win32com.client as win32
+import win32con
 from datetime import datetime
 
 def get_sampling_count(dataframe):
@@ -36,30 +37,62 @@ def get_sampling_count(dataframe):
     dataframe['sampling'] = dataframe['quantity'].apply(compute_sampling)
     return dataframe
 
+def parameters_join_ignore_case(df_left, df_right, columns=None):
+    """
+    Perform a left join between two DataFrames while ignoring the case of 'part_number' fields.
 
-def merge_with_reference(dataframe):
-    # 读取参照表
-    parameters_db_1 = parameters_df
-    parameters_db_2 = customer_no_df
-    # 根据'customer_no'查找'customer_name'并加入到merged_dataframe
-    merged_dataframe = pd.merge(dataframe, parameters_db_2[['customer_no', 'customer_name']], on='customer_no',
-                                how='left')
+    Args:
+    - df_left (DataFrame): The left DataFrame.
+    - df_right (DataFrame): The right DataFrame.
+    - columns (list of str, optional): Columns to select from the right DataFrame.
 
-    # 在合并前将 'part_number' 列转换为小写
-    lower_part_number_column = 'lower_part_number'
-    try:
-        merged_dataframe = pd.merge(merged_dataframe, parameters_db_1.rename(columns={'part_number': lower_part_number_column}),
-                                    left_on='part_number', right_on=lower_part_number_column,
-                                    how='left', suffixes=('', '_ref'))
-    except KeyError:
-        # 若 'part_number' 列不存在，填充 NaN 并继续进行合并
-        merged_dataframe = pd.merge(dataframe, parameters_db_1, on='part_number', how='left')
+    Returns:
+    - DataFrame: The result of the left join operation.
+    """
+    # Create a new column with uppercase 'part_number' for right DataFrame
+    df_right['part_number_upper'] = df_right['part_number'].str.upper()
 
-    # 填充 NaN 并将 'MPQ' 列转换为整数
-    merged_dataframe['MPQ'].fillna(0, inplace=True)
-    merged_dataframe['MPQ'] = merged_dataframe['MPQ'].astype(int)
+    # Perform the left join
+    merged_df = pd.merge(df_left, df_right[['part_number_upper'] + (columns or [])], on='part_number_upper', how='left')
 
-    return merged_dataframe
+    # Fill NaN values in 'MPQ' column with 0 and convert it to integer
+    merged_df['MPQ'].fillna(0, inplace=True)
+    merged_df['MPQ'] = merged_df['MPQ'].astype(int)
+
+    # Drop the temporary uppercase column
+    merged_df.drop(columns=['part_number_upper'], inplace=True)
+
+    return merged_df
+
+
+def left_join_ignore_case(df1, df2):
+    """
+    Perform a left join between two DataFrames while ignoring the case of 'part_number' fields.
+
+    Args:
+    - df1 (DataFrame): The first DataFrame.
+    - df2 (DataFrame): The second DataFrame.
+
+    Returns:
+    - DataFrame: The result of the left join operation.
+    """
+    # Convert 'part_number' fields to uppercase in both DataFrames
+    df1['part_number_upper'] = df1['part_number'].str.upper()
+    df2['part_number_upper'] = df2['part_number'].str.upper()
+
+
+    # Perform left join
+    merged_df = df1.merge(df2,
+                          left_on=['part_number_upper', 'purchase_order'],
+                          right_on=['part_number_upper','purchase_order'],
+                          how='left',
+                          suffixes=('', '_x'))
+
+    # Remove the additional fields with suffix '_x'
+    columns_to_drop = [col for col in merged_df.columns if col.endswith('_x')]
+    merged_df.drop(columns=columns_to_drop, inplace=True)
+
+    return merged_df
 
 def process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order, stock_dataframe):
     part_stock = part_stock.copy()
@@ -133,10 +166,16 @@ def main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_
     global parameters_df, customer_no_df
     parameters_df = pd.read_csv(parameters_database_path)
     customer_no_df = pd.read_csv(customer_no_database_path)
-    recommend_df = recommend_df.merge(preprocess_input_dataframe, on=['part_number', 'purchase_order'], how='left', suffixes=('', '_x'))
+    recommend_df = left_join_ignore_case(recommend_df, preprocess_input_dataframe)
     recommend_df['deduct'] = False
     recommend_df = get_sampling_count(recommend_df)
-    recommend_df = merge_with_reference(recommend_df)
+    recommend_df = pd.merge(recommend_df, customer_no_df[['customer_no', 'customer_name']], on='customer_no',
+                                how='left')
+    parameters_df['part_number_upper'] = parameters_df['part_number'].str.upper()
+
+    recommend_df = parameters_join_ignore_case(recommend_df, parameters_df,
+                                         columns=['marking_code', 'package', 'MPQ'])
+
     desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number', 'customer_part_number',
                      'lot', 'DC', 'date_code', 'quantity', 'purchase_order', 'unit_price',
                      'store', 'row_index', 'remark', 'sampling', 'marking_code', 'package', 'MPQ', 'delivery_date',
@@ -228,13 +267,15 @@ def print_excel_sheet(workbook_path, sheet_name):
     try:
         excel_app = win32.gencache.EnsureDispatch('Excel.Application')
         excel_app.Visible = False  # Set to True if you want Excel to be visible during printing
+        excel_app.DisplayAlerts = False
 
         workbook = excel_app.Workbooks.Open(workbook_path)
         worksheet = workbook.Sheets[sheet_name]
 
         # # Set the printer
         printer_name = "KONICA MINOLTA 367SeriesPCL on Ne10:"
-        worksheet.PageSetup.Orientation =  2
+        worksheet.PageSetup.Orientation = win32con.DMORIENT_LANDSCAPE
+        worksheet.PageSetup.Zoom = False
         worksheet.PageSetup.FitToPagesWide = 1
 
 
