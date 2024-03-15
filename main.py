@@ -34,7 +34,7 @@ def slice_dataframe(main_dataframe, dataframe_name):
         'oqc_report_dataframe': ['purchase_order', 'product_number', 'customer_part_number', 'new_lot', 'new_quantity',
                                  'marking_code', 'sampling', 'DC'],
         'query_dataframe': ['invoice_series', 'customer_name', 'part_number', 'lot', 'DC', 'quantity',
-                            'customer_part_number', 'marking_code', 'package', 'MPQ', 'store', 'expired',
+                            'customer_part_number', 'marking_code', 'package', 'MPQ', 'store', 'expired','delivery_date','row_index'
                             ]
     }
 

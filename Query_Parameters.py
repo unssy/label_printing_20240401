@@ -1,11 +1,11 @@
-from  utilities import *
+from utilities import *
 import pandas as pd
 import win32com.client as win32
 import win32con
 from datetime import datetime
 
-def get_sampling_count(dataframe):
 
+def get_sampling_count(dataframe):
     shipment_bounds = [2, 9, 16, 26, 51, 91, 151, 281, 501, 1201, 3201, 10001, 35001, 150001, 500001]
     sampling_counts = [2, 3, 5, 8, 13, 20, 32, 50, 80, 125, 200, 315, 500, 800, 1250]
 
@@ -36,6 +36,7 @@ def get_sampling_count(dataframe):
 
     dataframe['sampling'] = dataframe['quantity'].apply(compute_sampling)
     return dataframe
+
 
 def parameters_join_ignore_case(df_left, df_right, columns=None):
     """
@@ -80,11 +81,10 @@ def left_join_ignore_case(df1, df2):
     df1['part_number_upper'] = df1['part_number'].str.upper()
     df2['part_number_upper'] = df2['part_number'].str.upper()
 
-
     # Perform left join
     merged_df = df1.merge(df2,
                           left_on=['part_number_upper', 'purchase_order'],
-                          right_on=['part_number_upper','purchase_order'],
+                          right_on=['part_number_upper', 'purchase_order'],
                           how='left',
                           suffixes=('', '_x'))
 
@@ -94,44 +94,60 @@ def left_join_ignore_case(df1, df2):
 
     return merged_df
 
-def process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order, stock_dataframe):
-    part_stock = part_stock.copy()
-    part_stock['date_code'] = part_stock['date_code'].apply(format_date_code)
-    part_stock_sorted = part_stock.sort_values(by=['date_code', 'row_index'], ascending=[True, True], na_position='last')
-    result_rows = []
-    accumulated_quantity = 0
-    found_enough_stock = False  # 标志是否找到足够的库存
 
-    # 额外的检查，看是否有完全匹配的库存
+def process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order, stock_dataframe):
+    # Make a copy of the part_stock DataFrame to avoid modifying the original
+    part_stock = part_stock.copy()
+
+    # Format the date_code column if needed
+    part_stock['date_code'] = part_stock['date_code'].apply(format_date_code)
+
+    # Sort the DataFrame by date_code and row_index in ascending order
+    part_stock_sorted = part_stock.sort_values(by=['date_code', 'row_index'], ascending=[True, True],
+                                               na_position='last')
+
+    # Initialize an empty list to store result rows
+    result_rows = []
+
+    # Initialize a variable to track the accumulated quantity of target parts
+    accumulated_target_quantity = 0
+
+    # Check if there is an exact match for the target quantity in the stock
     exact_match = part_stock_sorted[part_stock_sorted['quantity'] == target_quantity]
     if not exact_match.empty:
+        # If an exact match is found, update result_rows and stock_dataframe accordingly
         for index, row in exact_match.iterrows():
             row['purchase_order'] = str(target_purchase_order)
             result_rows.append(row)
-            accumulated_quantity += target_quantity
-            found_enough_stock = True  # 找到足够的库存
+            accumulated_target_quantity += target_quantity
             stock_dataframe.loc[stock_dataframe['row_index'] == row['row_index'], 'quantity'] -= row['quantity']
         return result_rows
-    # 没有完全匹配的情况下，继续循环查找部分匹配
+
+    # Iterate through the sorted part_stock DataFrame to find partial matches
     for index, row in part_stock_sorted.iterrows():
-        remaining_quantity = target_quantity - accumulated_quantity
+        remaining_target_quantity = target_quantity - accumulated_target_quantity
 
-        if row['quantity'] >= remaining_quantity:
-            result_row = row.copy()
-            result_row['quantity'] = remaining_quantity
-            result_row['purchase_order'] = str(target_purchase_order)
-            result_rows.append(result_row)
-            accumulated_quantity += remaining_quantity
-            found_enough_stock = True  # 找到足够的库存
-            break
+        # If the current row has enough quantity to fulfill the remaining target quantity
+        if row['quantity'] >= remaining_target_quantity:
+            # Update the quantity to match the remaining target quantity
+            row['quantity'] = remaining_target_quantity
+            found_enough_stock = True
+        else:
+            # If the current row does not have enough quantity, use all of its quantity
+            remaining_target_quantity = row['quantity']
+            found_enough_stock = False
 
+        # Assign the purchase_order to the current row
         row['purchase_order'] = str(target_purchase_order)
         result_rows.append(row)
-        accumulated_quantity += row['quantity']
-        stock_dataframe.loc[stock_dataframe['row_index'] == row['row_index'], 'quantity'] -= row['quantity']
+        accumulated_target_quantity += remaining_target_quantity
 
+        # If enough stock is found to fulfill the target quantity, exit the loop
+        if found_enough_stock:
+            break
+
+    # If enough stock is not found to fulfill the target quantity, add a remark row
     if not found_enough_stock:
-        # 在这里添加缺少库存的备注信息
         remark_row = {
             'part_number': str(row['part_number']),
             'lot': 'N/A',
@@ -141,12 +157,16 @@ def process_stock_by_max_and_earliest(part_stock, target_quantity, target_purcha
             'store': 'N/A',
             'row_index': 'N/A',
             'purchase_order': str(target_purchase_order),
-            'remark': '缺少库存' + str(target_quantity - accumulated_quantity)
+            'remark': 'Insufficient stock: ' + str(target_quantity - accumulated_target_quantity)
         }
         result_rows.append(remark_row)
 
-    return result_rows
+    # Update stock_dataframe with the quantities taken from the stock
+    for row in result_rows:
+        if row['row_index'] != 'N/A':
+            stock_dataframe.loc[stock_dataframe['row_index'] == row['row_index'], 'quantity'] -= row['quantity']
 
+    return result_rows
 
 def main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_path, customer_no_database_path):
     all_results = []
@@ -159,7 +179,8 @@ def main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_
             (stock_dataframe['part_number'].str.upper() == target_part_number.upper()) &
             (stock_dataframe['quantity'] != 0)]
         # 使用最大和最早 lot 的組合處理
-        result_list = process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order, stock_dataframe)
+        result_list = process_stock_by_max_and_earliest(part_stock, target_quantity, target_purchase_order,
+                                                        stock_dataframe)
         all_results.extend(result_list)
 
     recommend_df = pd.DataFrame(all_results)
@@ -170,11 +191,11 @@ def main_query(preprocess_input_dataframe, stock_dataframe, parameters_database_
     recommend_df['deduct'] = False
     recommend_df = get_sampling_count(recommend_df)
     recommend_df = pd.merge(recommend_df, customer_no_df[['customer_no', 'customer_name']], on='customer_no',
-                                how='left')
+                            how='left')
     parameters_df['part_number_upper'] = parameters_df['part_number'].str.upper()
 
     recommend_df = parameters_join_ignore_case(recommend_df, parameters_df,
-                                         columns=['marking_code', 'package', 'MPQ'])
+                                               columns=['marking_code', 'package', 'MPQ'])
 
     desired_order = ['customer_no', 'customer_name', 'part_number', 'product_number', 'customer_part_number',
                      'lot', 'DC', 'date_code', 'quantity', 'purchase_order', 'unit_price',
@@ -231,6 +252,7 @@ def autofill_formula(ws, source_col, row, target_col):
     dest_range = ws.Range(ws.Cells(row, source_col), ws.Cells(row, target_col))
     source_cell.AutoFill(Destination=dest_range, Type=win32.constants.xlFillDefault)
 
+
 def deduct_stock(file_path, sheet, data_df, password):
     """Deduct stock based on provided dataframe."""
     # excel = None
@@ -248,7 +270,9 @@ def deduct_stock(file_path, sheet, data_df, password):
         ws.Cells(1, col_to_insert).Value = delivery_date
         ws.Cells(2, col_to_insert).Value = data_df['customer_name'].iloc[0]
         for _, row in data_df.iterrows():
-            ws.Cells(row['row_index'], col_to_insert).Value = row['quantity']
+            current_value = ws.Cells(row['row_index'], col_to_insert).Value
+            current_value = 0 if current_value is None else current_value
+            ws.Cells(row['row_index'], col_to_insert).Value = int(current_value) + int(row['quantity'])
 
         autofill_formula(ws, col_to_insert - 1, 3, col_to_insert)
 
@@ -278,8 +302,7 @@ def print_excel_sheet(workbook_path, sheet_name):
         worksheet.PageSetup.Zoom = False
         worksheet.PageSetup.FitToPagesWide = 1
 
-
-        worksheet.PrintOut(Copies=1, ActivePrinter= printer_name)
+        worksheet.PrintOut(Copies=1, ActivePrinter=printer_name)
 
         workbook.Close(SaveChanges=False)
         excel_app.Quit()
