@@ -6,5 +6,5 @@
 "customer_no_database": "C:\\Users\\windows user\\PycharmProjects\\project_autopacking_20230812\\customer_no.csv",
 "stock_workbook_sheet": "20230105",
 "stock_password" : "369",
-"threshold_months" : "24"
+"threshold_months" : "12"
 }

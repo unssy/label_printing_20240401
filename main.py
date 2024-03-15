@@ -22,8 +22,9 @@ def get_workbook_path(filename):
 def slice_dataframe(main_dataframe, dataframe_name):
     parameters_mapping = {
         'delivery_record_dataframe': ['month', 'day', 'invoice_series', 'purchase_order', 'customer_no',
-                                      'customer_name',
-                                      'lot', 'part_number', 'DC', 'date_code', 'quantity'],
+                                      'customer_name','lot', 'part_number', 'DC', 'date_code', 'quantity',
+                                      'customer_part_number', 'product_number','new_lot', 'new_DC', 'new_date_code',
+                                      'new_quantity', 'marking_code', 'package', 'unit_price','currency'],
         'label_parameters_dataframe': ['delivery_date', 'invoice_series', 'customer_no', 'customer_name', 'part_number',
                                        'lot', 'DC', 'quantity', 'customer_part_number', 'product_number', 'new_lot',
                                        'new_DC',
