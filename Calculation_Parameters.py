@@ -98,16 +98,18 @@ def calculate_label_copies(df):
     def process_7_inch_reel(row):
         quantity = row['quantity']
         MPQ = row['MPQ']
+        medium_unit = 60000
+        large_unit = 240000
         # 小包裝
         small_label_copies = quantity // MPQ
         # 中包裝
-        medium_remainder = quantity - 60000 * int(quantity / 60000)
-        medium_label_quantity = [quantity - 60000 * int(quantity / 60000), quantity, 60000]
-        medium_label_copies = [0 if medium_remainder == 0 else 1, 1, max(quantity // 60000, 0)]
+        medium_remainder = quantity - medium_unit * int(quantity / medium_unit)
+        medium_label_quantity = [quantity - medium_unit * int(quantity / medium_unit), medium_unit, quantity]
+        medium_label_copies = [0 if medium_remainder == 0 else 1, max(quantity // medium_unit, 0), 1]
         # 大包裝
-        large_remainder = quantity - 240000 * int(quantity / 240000)
-        large_label_quantity = [quantity - 240000 * int(quantity / 240000), quantity, 240000]
-        large_label_copies = [0 if large_remainder == 0 else 1, 2, max(quantity // 240000, 0)]
+        large_remainder = quantity - large_unit * int(quantity / large_unit)
+        large_label_quantity = [quantity - large_unit * int(quantity / large_unit), large_unit, quantity]
+        large_label_copies = [0 if large_remainder == 0 else 1, max(quantity // large_unit, 0), 2]
 
         row['small_label_quantity'] = MPQ
         row['small_label_copies'] = small_label_copies
@@ -121,16 +123,18 @@ def calculate_label_copies(df):
     def process_7_inch_thick_reel(row):
         quantity = row['quantity']
         MPQ = row['MPQ']
+        medium_unit = 21600
+        large_unit = 86400
         # 小包裝
         small_label_copies = quantity // MPQ
         # 中包裝
-        medium_remainder = quantity - 25200 * int(quantity / 25200)
-        medium_label_quantity = [medium_remainder, quantity, 25200]
-        medium_label_copies = [0 if medium_remainder == 0 else 1, 1, max(quantity // 25200, 0)]
+        medium_remainder = quantity - medium_unit * int(quantity / medium_unit)
+        medium_label_quantity = [medium_remainder, medium_unit, quantity]
+        medium_label_copies = [0 if medium_remainder == 0 else 1, max(quantity // medium_unit, 0), 1]
         # 大包裝
-        large_remainder = quantity - 100800 * int(quantity / 100800)
-        large_label_quantity = [large_remainder, quantity, 100800]
-        large_label_copies = [0 if large_remainder == 0 else 1, 2, max(quantity // 100800, 0)]
+        large_remainder = quantity - large_unit * int(quantity / large_unit)
+        large_label_quantity = [large_remainder, large_unit, quantity]
+        large_label_copies = [0 if large_remainder == 0 else 1, max(quantity // large_unit, 0), 2]
 
         row['small_label_quantity'] = MPQ
         row['small_label_copies'] = small_label_copies
@@ -155,12 +159,12 @@ def calculate_label_copies(df):
         small_label_copies = quantity // MPQ
         # 中包裝
         medium_remainder = quantity - medium_unit * int(quantity / medium_unit)
-        medium_label_quantity = [medium_remainder, quantity, medium_unit]
-        medium_label_copies = [0 if medium_remainder == 0 else 1, 1, max(quantity // medium_unit, 0)]
+        medium_label_quantity = [medium_remainder, medium_unit, quantity]
+        medium_label_copies = [0 if medium_remainder == 0 else 1, max(quantity // medium_unit, 0), 1]
         # 大包裝
         large_remainder = quantity - large_unit * int(quantity / large_unit)
-        large_label_quantity = [large_remainder, quantity, large_unit]
-        large_label_copies = [0 if large_remainder == 0 else 1, 2, max(quantity // large_unit, 0)]
+        large_label_quantity = [large_remainder, large_unit, quantity]
+        large_label_copies = [0 if large_remainder == 0 else 1, max(quantity // large_unit, 0), 2]
 
         row['small_label_quantity'] = MPQ
         row['small_label_copies'] = small_label_copies

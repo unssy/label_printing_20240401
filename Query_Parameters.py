@@ -227,7 +227,7 @@ def open_excel_workbook(file_path, password):
     """Open an Excel workbook with given write password."""
 
     excel = win32.gencache.EnsureDispatch('Excel.Application')
-    excel.Visible = True
+    excel.Visible = False
     try:
         # win32.gencache.EnsureModule('{00020813-0000-0000-C000-000000000046}', 0, 1, 9)
         wb = excel.Workbooks.Open(
