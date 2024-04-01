@@ -1,0 +1,4 @@
+pandas~=2.0.3
+pyautogui~=0.9.54
+clipboard~=0.0.4
+keyboard~=0.13.5
